@@ -1,61 +1,45 @@
 <!DOCTYPE html>
-
 <html>
+
 <head>
-    <meta charset="utf-8">
-    <title>Fractal Jig</title>
-    <link rel="stylesheet" href="Meshifier.css" />
+    <title>Tearable Cloth</title>
+
+    <link rel="stylesheet" type="text/css" href="style.css" />
 </head>
+
 <body>
-    <div id="toolbar">
-        <label>
-            <input type="checkbox" id='show4dExplode' />
-            4d Explode
-        </label>
-        <label>
-            <input type="checkbox" id='showHyperbolic' />
-            Hyperbolic
-        </label>
-        <label>
-            <input type="button" id='saveObj' />
-            Save OBJ
-        </label>
+
+    <canvas id="c"></canvas>
+
+    <a target="_blank" href="http://codepen.io/suffick/pen/fhjvk" id="p">Like playing with physics? Click here!</a>
+
+    <div id="info">
+        <div id="top">
+            <a target="_blank" id="site" href="javascript:alert('Currently down, sorry!');">my website</a>
+            <a id="close" href="">close</a>
+        </div>
+        <p>
+            <br>- Tear the cloth with your mouse.
+            <br>
+            <br>- Right click and drag to cut the cloth
+            <br>
+            <br>- Reduce physics_accuracy if it's laggy.
+            <br>
+            <br>
+        </p>
     </div>
 
-    <div id="4dExplodePanel" class="panel">
-        <label>
-            <input type="checkbox" id='is4dExplode' />
-            4D Explode
-        </label>
-    </div>
 
-    <div id="hyperbolicPanel" class="panel">
-        <label>
-            <input type="checkbox" id='isHyperbolic' checked />
-            Hyperbolic
-        </label>
-    </div>
 
-    <script src="js/three/three.js"></script>
-    <script src="js/three/controls/OrbitControls.js"></script>
-    <script src="js/three/loaders/STLLoader.js"></script>
-
-    <script src="js/four/Four.js"></script>
-    <script src="js/four/math/Box4.js"></script>
-    <script src="js/four/math/Matrix5.js"></script>
-    <script src="js/four/core/Geometry.js"></script>
-    <script src="js/four/core/Face3.js"></script>
-    <script src="js/four/core/Face4.js"></script>
-    <script src="js/four/extras/geometries/Object3DGeometry.js"></script>
-
-    <script src="js/complex/Complex.js"></script>
-    <script src="js/complex/Circline.js"></script>
-    <script src="js/complex/Face.js"></script>
-    <script src="js/complex/Disc.js"></script>
-
-    <script src="js/libs/stats.min.js"></script>
-    <script src="js/meshtool.js"></script>
-    <script src="js/meshifier.js"></script>
-
+    <script type="text/javascript">
+        document.getElementById('close').onmousedown = function(e) {
+            e.preventDefault();
+            document.getElementById('info').style.display = 'none';
+            return false;
+        };
+    </script>
+    
+    <script type="text/javascript" src="Cloth.js"></script>
 </body>
+
 </html>
