@@ -4,27 +4,46 @@
 <head>
     <title>Tearable Cloth</title>
 
-    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="stylesheet" type="text/css" href="struttura.css" />
+<   <link rel="stylesheet" type="text/css" href="style.css" />
 </head>
 
 <body>
 
+    <label>
+        <input type="button" id='saveObj' />
+        Save OBJ
+     </label>
+
     <div class="content grid">
-        <canvas id="3d" class="col s1of2"></canvas>
+        <div id="3d" class="col s1of2"></div>
 
         <canvas id="c" class="col s1of2"></canvas>
     </div>
-
-
-    <script type="text/javascript">
-        document.getElementById('close').onmousedown = function(e) {
-            e.preventDefault();
-            document.getElementById('info').style.display = 'none';
-            return false;
-        };
-    </script>
-    
+   
     <script type="text/javascript" src="js/Cloth.js"></script>
+
+    <script src="js/partloader.js"></script>
+    <script src="js/three/three.js"></script>
+    <script src="js/three/controls/OrbitControls.js"></script>
+    <script src="js/three/loaders/STLLoader.js"></script>
+
+    <script src="js/four/Four.js"></script>
+    <script src="js/four/math/Box4.js"></script>
+    <script src="js/four/math/Matrix5.js"></script>
+    <script src="js/four/core/Geometry.js"></script>
+    <script src="js/four/core/Face3.js"></script>
+    <script src="js/four/core/Face4.js"></script>
+    <script src="js/four/extras/geometries/Object3DGeometry.js"></script>
+
+    <script src="js/complex/Complex.js"></script>
+    <script src="js/complex/Circline.js"></script>
+    <script src="js/complex/Face.js"></script>
+    <script src="js/complex/Disc.js"></script>
+
+    <script src="js/libs/stats.min.js"></script>
+    <script src="js/struttura.js"></script>
+
 </body>
 
 </html>
