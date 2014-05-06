@@ -32,7 +32,7 @@ function init() {
         camera.rotation.z = viewdata[5];
     }
 
-	controls = new THREE.OrbitControls(camera);
+	controls = new THREE.OrbitControls(camera, container3D);
 
 	controls.rotateSpeed = 2.0;
 	controls.zoomSpeed = 2.0;
@@ -70,6 +70,7 @@ function loadGeometry(geometries, lines) {
     geometry = g;
 
     edgeMesh = lines;
+    start2D(lines)
  }
 
 

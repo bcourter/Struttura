@@ -26,10 +26,10 @@ var physics_accuracy = 3,
     mouse_influence = 20,
     mouse_cut = 5,
     gravity = 1200,
-    cloth_height = 30,
-    cloth_width = 50,
-    start_y = 20,
-    spacing = 7,
+   // cloth_height = 30,
+  //  cloth_width = 50,
+  //  start_y = 20,
+  //  spacing = 7,
     tear_distance = 60;
 
 
@@ -143,22 +143,26 @@ Point.prototype.resolve_constraints = function () {
     }
 };
 
-Point.prototype.attach = function (point) {
-
+Point.prototype.separate = function (point, distance) {
     this.constraints.push(
-        new Constraint(this, point)
+        new Constraint(this, point, distance)
+    );
+};
+
+
+Point.prototype.attach = function (point) {
+    this.constraints.push(
+        new Constraint(this, point, spacing)
     );
 };
 
 Point.prototype.remove_constraint = function (lnk) {
-
     var i = this.constraints.length;
     while (i--)
         if (this.constraints[i] == lnk) this.constraints.splice(i, 1);
 };
 
 Point.prototype.add_force = function (x, y) {
-
     this.vx += x;
     this.vy += y;
 };
@@ -168,11 +172,10 @@ Point.prototype.pin = function (pinx, piny) {
     this.pin_y = piny;
 };
 
-var Constraint = function (p1, p2) {
-
+var Constraint = function (p1, p2, distance) {
     this.p1 = p1;
     this.p2 = p2;
-    this.length = spacing;
+    this.length = distance;
 };
 
 Constraint.prototype.resolve = function () {
@@ -193,32 +196,86 @@ Constraint.prototype.resolve = function () {
     this.p2.y -= py;
 };
 
+var drawScale = 1000;
 Constraint.prototype.draw = function () {
 
-    ctx.moveTo(this.p1.x, this.p1.y);
-    ctx.lineTo(this.p2.x, this.p2.y);
+    ctx.moveTo(this.p1.x * drawScale, this.p1.y * drawScale);
+    ctx.lineTo(this.p2.x * drawScale, this.p2.y * drawScale);
 };
 
-var Cloth = function () {
+var Cloth = function (edges) {
 
     this.points = [];
 
-    var start_x = canvas.width / 2 - cloth_width * spacing / 2;
+    var maxEdge = 0.3;
 
-    for (var y = 0; y <= cloth_height; y++) {
-
-        for (var x = 0; x <= cloth_width; x++) {
-
-            var p = new Point(start_x + x * spacing, start_y + y * spacing);
-
-            x != 0 && p.attach(this.points[this.points.length - 1]);
-            y == 0 && p.pin(p.x, p.y);
-            y != 0 && p.attach(this.points[x + (y - 1) * (cloth_width + 1)])
-
-            this.points.push(p);
+    for (var i = 0; i < edges.length; i++) {
+        var vertices = edges[i].vertices;
+        var a = vertices[0];
+        var b = vertices[vertices.length - 1];
+ 
+        var pa = getPoint(this.points, a);
+        if (pa == null) {
+            pa = new Point(a.x, a.y);
+            this.points.push(pa);
         }
-    }
+
+        var pb = getPoint(this.points, b);
+        if (pb == null) {
+            pb = new Point(b.x, b.y);
+            this.points.push(pb);
+        }
+
+  //      var distance = a.subVectors(a, b).length();
+        var dx = pa.x - pb.x;
+        var dy = pa.y - pb.y;
+        var distance = dx * dx + dy * dy ;
+
+        if (distance > maxEdge)
+            continue;
+
+        pa.separate(pb, distance);
+
+   //     if (i == 0) {
+           pa.pin(pa.x, pa.y);
+           pb.pin(pb.x, pb.y);
+       }
+  //  }
 };
+
+function getPoint(points, point) {
+    for (var i = 0; i < points.length; i++) {
+        var p = points[i];
+        var dx = p.x - point.x;
+        var dy = p.y - point.y;
+        if (dx * dx + dy * dy < 1E-9)
+            return p;
+    }
+
+    return null;
+}
+
+
+// var Cloth = function () {
+
+//     this.points = [];
+
+//     var start_x = canvas.width / 2 - cloth_width * spacing / 2;
+
+//     for (var y = 0; y <= cloth_height; y++) {
+
+//         for (var x = 0; x <= cloth_width; x++) {
+
+//             var p = new Point(start_x + x * spacing, start_y + y * spacing);
+
+//             x != 0 && p.attach(this.points[this.points.length - 1]);
+//             y == 0 && p.pin(p.x, p.y);
+//             y != 0 && p.attach(this.points[x + (y - 1) * (cloth_width + 1)])
+
+//             this.points.push(p);
+//         }
+//     }
+// };
 
 Cloth.prototype.update = function () {
 
@@ -288,8 +345,6 @@ function start() {
     boundsy = canvas.height - 1;
 
     ctx.strokeStyle = '#888';
-    cloth = new Cloth();
-    update();
 }
 
 window.onload = function () {
@@ -306,3 +361,8 @@ window.onload = function () {
 
     start();
 };
+
+function start2D(edges) {
+    cloth = new Cloth(edges);
+    update();
+}
