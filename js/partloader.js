@@ -9,13 +9,17 @@ function loadpart(url, callback) {
 					var json = JSON.parse( xhr.responseText );
 					
 					var lines = [];
+					var curves = [];
 					var meshes = [];
 
 					if (json.lines != undefined) {
 						for ( i = 0; i < json.lines.length; i++ ) {
 							var loader = new THREE.JSONLoader();
 							var result = loader.parse(json.lines[i], url);
-							lines.push(result.geometry);
+							if (json.lines[i].metadataformatVersion > 0)
+								lines.push(result.geometry);
+							else
+								curves.push(result.geometry);
 						}
 					}
 					
@@ -27,7 +31,7 @@ function loadpart(url, callback) {
 						}
 					}
 
-					callback(meshes, lines);
+					callback(meshes, lines, curves);
 				} else {
 					console.error( 'THREE.JSONLoader: "' + url + '" seems to be unreachable or the file is empty.' );
 				}

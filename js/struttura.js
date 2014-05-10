@@ -1,9 +1,12 @@
 var renderer, camera, settings, container3D, panels
-var material, geometry;
-var mesh, edgeMesh;
+var material, geometry, physics;
+var mesh, geometryEdges = [], geometryCurves = [];
 var objModel = [];
 var objModelCount = 3;
 var lastTime = 0, lastAnimation = 0, lastRotation = 0;
+
+var pointmass = 0.001;  //kg
+var springiness = 1;
 
 init();
 animate();
@@ -54,25 +57,70 @@ function init() {
         document.getElementById("saveObj").onclick = saveObj;
     };
 
-    var patternFile = 'resources/json3D/cylinder.js';
+    var patternFile = 'resources/json3D/cylinder2.js';
 
-    loadpart( patternFile, function ( geometries, edges ) { loadGeometry(geometries, edges); } );
+    loadpart( patternFile, function ( geometries, lines, curves ) { loadGeometry(geometries, lines, curves); } );
 
     settings = new Settings();
 }
 
-function loadGeometry(geometries, lines) {
+function loadGeometry(geometries, lines, curves) {
     var g = geometries.shift();
     while (geometries.length > 0)
         THREE.GeometryUtils.merge(g, geometries.shift());
 
     g.mergeVertices();
     geometry = g;
+    geometry.points = [];
 
-    edgeMesh = lines;
-    start2D(lines)
- }
+    physics = new Physics();
 
+
+    for (var k = 0; k < geometry.vertices.length; k++) {
+        geometry.points[k] = new Point(geometry.vertices[k], pointmass);
+        physics.points.push(geometry.points[k]);
+    }
+
+    createSprings(lines);
+    createSprings(curves, 0);
+}
+
+function createSprings(lines, distance) {
+    for (var i = 0; i < lines.length; i++) {
+        lines[i].vertexIndices = [];
+        for (var j = 0; j < lines[i].vertices.length; j++) {
+            for (var k = 0; k < geometry.vertices.length; k++) {
+                if ((new THREE.Vector3()).subVectors(lines[i].vertices[j], geometry.vertices[k]).length() < 1E-6) {
+                    lines[i].vertexIndices[j] = k;
+                    break;
+                }
+            }
+
+            if (k == geometry.vertices.length)
+                console.log('no point found');
+        }
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+        var spring = new Spring(
+            geometry.points[lines[i].vertexIndices[0]],
+            geometry.points[lines[i].vertexIndices[lines[i].vertexIndices.length - 1]],
+            springiness);
+
+       if (distance !== undefined)
+           spring.distance = distance;
+
+        physics.constraints.push(spring);
+    }
+
+    // geometry.computeBoundingBox();
+    // var xDist = geometry.boundingBox.size.x;
+    // for (var k = 0; k < geometry.vertices.length; k++) {
+    //     var r = 1;
+    //     var theta = geometry.vertices[k].x / xDist * 2 * Math.PI;
+    //     geometry.vertices[k] = new THREE.Vector3(r * Math.sin(theta), r * Math.cos(theta), geometry.vertices[k].y);
+    // }
+}
 
 function onWindowResize() {
     var width = container3D.offsetWidth;
@@ -109,18 +157,20 @@ function mergeAllVertices(object3D) {
     return geometry;
 }
 
+var animGeometry
 var frame = 0;
 //var geom = THREE.CubeGeometry(2, 2, 2);
 function render() {
     frame++;
     var time = new Date().getTime() / 1000;
-    lastTime = time;
 
     if (geometry === undefined) {
+        animGeometry = geometry;
         return;
     }
 
-    var animGeometry = geometry;
+
+    animGeometry = geometry.clone();
  
     material = [
         new THREE.MeshPhongMaterial( { 
@@ -177,10 +227,14 @@ function render() {
 
         setCookie("view", viewdata.join()); 
     }
+
+    physics.update(0.001);
+  //  physics.update(time - lastTime);
+    lastTime = time;
 }
 
 function saveObj() {
-    var op = THREE.saveToObj(basicMeshFromGeometry(geometry));
+    var op = THREE.saveToObj(new THREE.Mesh(geometry, new THREE.MeshLambertMaterial()));
 
     var newWindow = window.open("");
     newWindow.document.write(op);

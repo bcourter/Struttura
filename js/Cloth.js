@@ -32,6 +32,8 @@ var physics_accuracy = 3,
   //  spacing = 7,
     tear_distance = 60;
 
+var soften = 1000;
+
 
 window.requestAnimFrame =
     window.requestAnimationFrame ||
@@ -89,7 +91,7 @@ Point.prototype.update = function (delta) {
         } else if (dist < mouse_cut) this.constraints = [];
     }
 
-    this.add_force(0, gravity);
+    this.add_force(0, gravity /  soften);
 
     delta *= delta;
     nx = this.x + ((this.x - this.px) * .99) + ((this.vx / 2) * delta);
@@ -187,8 +189,8 @@ Constraint.prototype.resolve = function () {
 
     if (dist > tear_distance) this.p1.remove_constraint(this);
 
-    var px = diff_x * diff * 0.5;
-    var py = diff_y * diff * 0.5;
+    var px = diff_x * diff * 0.5 / soften;
+    var py = diff_y * diff * 0.5 / soften;
 
     this.p1.x += px;
     this.p1.y += py;
@@ -196,7 +198,7 @@ Constraint.prototype.resolve = function () {
     this.p2.y -= py;
 };
 
-var drawScale = 1000;
+var drawScale = 500;
 Constraint.prototype.draw = function () {
 
     ctx.moveTo(this.p1.x * drawScale, this.p1.y * drawScale);
@@ -216,31 +218,30 @@ var Cloth = function (edges) {
  
         var pa = getPoint(this.points, a);
         if (pa == null) {
-            pa = new Point(a.x, a.y);
+            pa = new Point(a.x + 0.5, a.y);
             this.points.push(pa);
         }
 
         var pb = getPoint(this.points, b);
         if (pb == null) {
-            pb = new Point(b.x, b.y);
+            pb = new Point(b.x + 0.5, b.y);
             this.points.push(pb);
         }
 
   //      var distance = a.subVectors(a, b).length();
         var dx = pa.x - pb.x;
         var dy = pa.y - pb.y;
-        var distance = dx * dx + dy * dy ;
+        var distance = Math.sqrt(dx * dx + dy * dy) ;
 
-        if (distance > maxEdge)
-            continue;
+        if (distance < maxEdge)
+           pa.separate(pb, distance);
 
-        pa.separate(pb, distance);
-
-   //     if (i == 0) {
-           pa.pin(pa.x, pa.y);
+        var pinthresh = 0.01;
+        if (pa.y < pinthresh) 
+           pa.pin(pa.x, pa.y); 
+        if (pb.y < pinthresh) 
            pb.pin(pb.x, pb.y);
-       }
-  //  }
+    }
 };
 
 function getPoint(points, point) {
@@ -248,7 +249,7 @@ function getPoint(points, point) {
         var p = points[i];
         var dx = p.x - point.x;
         var dy = p.y - point.y;
-        if (dx * dx + dy * dy < 1E-9)
+        if (dx * dx + dy * dy < 1E-10)
             return p;
     }
 
