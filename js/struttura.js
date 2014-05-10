@@ -1,4 +1,4 @@
-var renderer, camera, settings, container3D, panels
+var renderer, camera, settings, container3D, panels, scene
 var material, geometry, physics;
 var mesh, geometryEdges = [], geometryCurves = [];
 var objModel = [];
@@ -6,7 +6,7 @@ var objModelCount = 3;
 var lastTime = 0, lastAnimation = 0, lastRotation = 0;
 
 var pointmass = 0.001;  //kg
-var springiness = 1;
+var springiness = 10;
 
 init();
 animate();
@@ -20,19 +20,17 @@ function init() {
     container3D.appendChild(renderer.domElement);
 
     camera = new THREE.PerspectiveCamera(5, width / height, 1, 1000);
-    camera.position.z = 70;
+    camera.position.y = 5;
+    camera.position.z = 30;
 
     var cookie = getCookie("view");
-    if (cookie !== undefined && false) {
+    if (cookie !== undefined   ) {
         var viewdata = cookie.split(',');
 
-        camera.position.x = viewdata[0];
-        camera.position.y = viewdata[1];
-        camera.position.z = viewdata[2];
+        for (var i = 0; i < 16; i++)
+            camera.projectionMatrix[i] = viewdata[i];
 
-        camera.rotation.x = viewdata[3];
-        camera.rotation.y = viewdata[4];
-        camera.rotation.z = viewdata[5];
+
     }
 
 	controls = new THREE.OrbitControls(camera, container3D);
@@ -57,9 +55,13 @@ function init() {
         document.getElementById("saveObj").onclick = saveObj;
     };
 
-    var patternFile = 'resources/json3D/cylinder2.js';
+   // var patternFile = 'resources/json3D/cylinder2.js';
+    var patternFile = 'resources/json3D/dress10-28.js';
 
     loadpart( patternFile, function ( geometries, lines, curves ) { loadGeometry(geometries, lines, curves); } );
+           
+
+
 
     settings = new Settings();
 }
@@ -82,15 +84,95 @@ function loadGeometry(geometries, lines, curves) {
     }
 
     createSprings(lines);
-    createSprings(curves, 0);
+    createSprings(curves, 0, springiness * 2);
+
+    create2D(lines);
+
+    geometry.computeBoundingBox();
+    var xOffset = geometry.boundingBox.min.x;
+    var xDist = geometry.boundingBox.size().x + xOffset;
+    var thetaOffset = Math.PI * (xOffset / xDist + 1 / 2); 
+    var r = xDist / Math.PI / 2;
+    var elliptical = 1.2;
+    for (var k = 0; k < geometry.vertices.length; k++) {
+        var theta = geometry.vertices[k].x / xDist * 2 * Math.PI - thetaOffset;
+        geometry.vertices[k].set(r * Math.sin(theta) * elliptical, geometry.vertices[k].y, r * Math.cos(theta) / elliptical);
+        physics.points[k].position = geometry.vertices[k];
+        physics.points[k].oldPosition = geometry.vertices[k].clone();
+    }
+
+    createScene();
 }
 
-function createSprings(lines, distance) {
+function create2D(lines) {
+    canvas = document.getElementById('c');
+    ctx = canvas.getContext('2d');
+
+    var spoonflowerwidth = 8100;
+    var spoonflowerheight = 18100;
+    var scale = 1/10;
+
+    canvas.width = spoonflowerwidth * scale;
+    canvas.height = spoonflowerheight * scale;
+
+    ctx.strokeStyle = '#888';
+
+    var drawScale = 1;
+    for (var i = 0; i < lines.length; i++) {
+        var p = lines[i].vertices[0].clone().multiplyScalar(drawScale);
+
+        ctx.moveTo(p.x , p.y);
+        for (var j = 1; j < lines[i].vertices.length; j++) {
+            p = lines[i].vertices[j].clone().multiplyScalar(drawScale);
+            ctx.lineTo(p.x , p.y);
+        }
+
+    }
+};
+
+function createScene() {
+    material = [
+        new THREE.MeshPhongMaterial( { 
+            color: 0x000000, 
+            side: THREE.DoubleSide,
+            shading: THREE.FlatShading, 
+            specular: 0x999999,
+            emissive: 0x000000,
+            shininess: 10 
+        } ),
+        new THREE.MeshBasicMaterial( { 
+            color: 0xEEEEEE, 
+            shading: THREE.FlatShading, 
+            wireframe: true,
+            wireframeLinewidth: 2
+        } )
+    ];
+
+    scene = new THREE.Scene();
+    scene.add(THREE.SceneUtils.createMultiMaterialObject(geometry, material));
+
+    var ambientLight = new THREE.AmbientLight(0x666666);
+    scene.add(ambientLight);
+
+    scene.fog = new THREE.Fog(0x333333, 1500, 2100);
+
+    var directionalLight = new THREE.DirectionalLight(0x8888aa);
+    directionalLight.position.set(1, 1, 1).normalize();
+    scene.add(directionalLight);
+
+    var directionalLight = new THREE.DirectionalLight(0x8888aa);
+    directionalLight.position.set(-1, 1, 1).normalize();
+    scene.add(directionalLight);
+}
+
+function createSprings(lines, distance, springK) {
+    springK = springK || springiness;
+
     for (var i = 0; i < lines.length; i++) {
         lines[i].vertexIndices = [];
         for (var j = 0; j < lines[i].vertices.length; j++) {
             for (var k = 0; k < geometry.vertices.length; k++) {
-                if ((new THREE.Vector3()).subVectors(lines[i].vertices[j], geometry.vertices[k]).length() < 1E-6) {
+                if ((new THREE.Vector3()).subVectors(lines[i].vertices[j], geometry.vertices[k]).length() < 1E-4) {
                     lines[i].vertexIndices[j] = k;
                     break;
                 }
@@ -105,21 +187,15 @@ function createSprings(lines, distance) {
         var spring = new Spring(
             geometry.points[lines[i].vertexIndices[0]],
             geometry.points[lines[i].vertexIndices[lines[i].vertexIndices.length - 1]],
-            springiness);
+            springK);
 
-       if (distance !== undefined)
-           spring.distance = distance;
+        if (distance !== undefined) {
+            spring.distance = distance;
+        }
 
         physics.constraints.push(spring);
     }
 
-    // geometry.computeBoundingBox();
-    // var xDist = geometry.boundingBox.size.x;
-    // for (var k = 0; k < geometry.vertices.length; k++) {
-    //     var r = 1;
-    //     var theta = geometry.vertices[k].x / xDist * 2 * Math.PI;
-    //     geometry.vertices[k] = new THREE.Vector3(r * Math.sin(theta), r * Math.cos(theta), geometry.vertices[k].y);
-    // }
 }
 
 function onWindowResize() {
@@ -139,26 +215,9 @@ function animate() {
     //stats.update();
 }
 
-function mergeAllVertices(object3D) {
-    var offset = 0;
-    var geometry = new THREE.Geometry();
-    object3D.traverse(function (child) {
-        if (child instanceof THREE.Mesh) {
-            if (geometry.vertices.length == 0) {
-                geometry = child.geometry.clone();
-                return;
-            }
-
-            THREE.GeometryUtils.merge(geometry, child.geometry);
-        }
-    });
-
-    geometry.mergeVertices();
-    return geometry;
-}
-
 var animGeometry
 var frame = 0;
+var maxPhysics = 100;
 //var geom = THREE.CubeGeometry(2, 2, 2);
 function render() {
     frame++;
@@ -169,66 +228,24 @@ function render() {
         return;
     }
 
-
-    animGeometry = geometry.clone();
- 
-    material = [
-        new THREE.MeshPhongMaterial( { 
-            color: 0x000000, 
-            side: THREE.DoubleSide,
-            shading: THREE.FlatShading, 
-            specular: 0x999999,
-            emissive: 0x000000,
-            shininess: 10 
-        } ),
-        // new THREE.MeshLambertMaterial( { 
-        //     color: 0x222222, 
-        //     side: THREE.DoubleSide,
-        //     shading: THREE.FlatShading, 
-        //     transparent: true,  
-        //     opacity: 0.5
-        // } ),
-        new THREE.MeshBasicMaterial( { 
-            color: 0xEEEEEE, 
-            shading: THREE.FlatShading, 
-            wireframe: true,
-            wireframeLinewidth: 2
-        } )
-    ];
-
-    var scene = new THREE.Scene();
-    scene.add(THREE.SceneUtils.createMultiMaterialObject(animGeometry, material));
-
-    var ambientLight = new THREE.AmbientLight(0x666666);
-    scene.add(ambientLight);
-
-    scene.fog = new THREE.Fog(0x333333, 1500, 2100);
-
-    var directionalLight = new THREE.DirectionalLight(0x8888aa);
-    directionalLight.position.set(1, 1, 1).normalize();
-    scene.add(directionalLight);
-
-    var directionalLight = new THREE.DirectionalLight(0x8888aa);
-    directionalLight.position.set(-1, 1, 1).normalize();
-    scene.add(directionalLight);
+    geometry.computeFaceNormals();
+    geometry.computeVertexNormals();
+    geometry.normalsNeedUpdate = true;
+    geometry.verticesNeedUpdate = true;
 
     renderer.render(scene, camera);
 
     if (frame % 100 == 0) {
-        var viewdata = [6];
+        var viewdata = [16];
 
-        viewdata[0] = camera.position.x;
-        viewdata[1] = camera.position.y;
-        viewdata[2] = camera.position.z;
-
-        viewdata[3] = camera.rotation.x;
-        viewdata[4] = camera.rotation.y;
-        viewdata[5] = camera.rotation.z;
+        for (var i = 0; i < 16; i++)
+            viewdata[i] = camera.projectionMatrix[i];
 
         setCookie("view", viewdata.join()); 
     }
 
-    physics.update(0.001);
+//    if (frame < maxPhysics)
+        physics.update(0.001);
   //  physics.update(time - lastTime);
     lastTime = time;
 }
@@ -281,6 +298,26 @@ THREE.saveToObj = function (object3d) {
 
     return s;
 }
+
+
+function mergeAllVertices(object3D) {
+    var offset = 0;
+    var geometry = new THREE.Geometry();
+    object3D.traverse(function (child) {
+        if (child instanceof THREE.Mesh) {
+            if (geometry.vertices.length == 0) {
+                geometry = child.geometry.clone();
+                return;
+            }
+
+            THREE.GeometryUtils.merge(geometry, child.geometry);
+        }
+    });
+
+    geometry.mergeVertices();
+    return geometry;
+}
+
 
     // from http://stackoverflow.com/questions/4825683/how-do-i-create-and-read-a-value-from-cookie
 function setCookie(c_name,value,exdays) {

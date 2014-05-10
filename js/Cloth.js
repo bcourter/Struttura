@@ -228,10 +228,7 @@ var Cloth = function (edges) {
             this.points.push(pb);
         }
 
-  //      var distance = a.subVectors(a, b).length();
-        var dx = pa.x - pb.x;
-        var dy = pa.y - pb.y;
-        var distance = Math.sqrt(dx * dx + dy * dy) ;
+        var distance = a.distanceTo(b);
 
         if (distance < maxEdge)
            pa.separate(pb, distance);

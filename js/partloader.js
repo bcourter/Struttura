@@ -16,7 +16,7 @@ function loadpart(url, callback) {
 						for ( i = 0; i < json.lines.length; i++ ) {
 							var loader = new THREE.JSONLoader();
 							var result = loader.parse(json.lines[i], url);
-							if (json.lines[i].metadataformatVersion > 0)
+							if (json.lines[i].metadata.formatVersion > 0)
 								lines.push(result.geometry);
 							else
 								curves.push(result.geometry);
