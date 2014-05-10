@@ -1,6 +1,8 @@
 var renderer, camera, settings, container3D, panels, scene
-var material, geometry, physics;
-var mesh, geometryEdges = [], geometryCurves = [];
+var material, geometry, physics, flatGeometry;
+var mesh, lines, curves;
+var vertexGeometry, vertexMesh;
+var trans2D, trans2Dinverse, canvas, ctx;
 var objModel = [];
 var objModelCount = 3;
 var lastTime = 0, lastAnimation = 0, lastRotation = 0;
@@ -47,7 +49,7 @@ function init() {
 
 	controls.keys = [ 65, 83, 68 ];
 
-	controls.addEventListener( 'change', render );
+	controls.addEventListener( 'change', render3D );
 
     window.addEventListener('resize', onWindowResize, false);
 
@@ -56,7 +58,7 @@ function init() {
     };
 
    // var patternFile = 'resources/json3D/cylinder2.js';
-    var patternFile = 'resources/json3D/dress10-28.js';
+    var patternFile = 'resources/json3D/dress11-28.js';
 
     loadpart( patternFile, function ( geometries, lines, curves ) { loadGeometry(geometries, lines, curves); } );
            
@@ -70,6 +72,9 @@ function loadGeometry(geometries, lines, curves) {
     var g = geometries.shift();
     while (geometries.length > 0)
         THREE.GeometryUtils.merge(g, geometries.shift());
+
+    this.lines = lines;
+    this.cuves = curves;
 
     g.mergeVertices();
     geometry = g;
@@ -86,9 +91,10 @@ function loadGeometry(geometries, lines, curves) {
     createSprings(lines);
     createSprings(curves, 0, springiness * 2);
 
-    create2D(lines);
-
     geometry.computeBoundingBox();
+    create2D(geometry.boundingBox);
+    flatGeometry = geometry.clone();
+
     var xOffset = geometry.boundingBox.min.x;
     var xDist = geometry.boundingBox.size().x + xOffset;
     var thetaOffset = Math.PI * (xOffset / xDist + 1 / 2); 
@@ -104,7 +110,7 @@ function loadGeometry(geometries, lines, curves) {
     createScene();
 }
 
-function create2D(lines) {
+function create2D(box) {
     canvas = document.getElementById('c');
     ctx = canvas.getContext('2d');
 
@@ -115,19 +121,73 @@ function create2D(lines) {
     canvas.width = spoonflowerwidth * scale;
     canvas.height = spoonflowerheight * scale;
 
-    ctx.strokeStyle = '#888';
+    var scale = canvas.width / (box.size().x + 2 * box.min.x);
+    var trans = box.size().y + box.min.y;
+    var rotation = new THREE.Matrix4().makeRotationX(Math.PI);
 
-    var drawScale = 1;
-    for (var i = 0; i < lines.length; i++) {
-        var p = lines[i].vertices[0].clone().multiplyScalar(drawScale);
+    trans2D = new THREE.Matrix4()
+        .multiplyScalar(scale)
+        .multiply(new THREE.Matrix4().makeTranslation(0, trans, 0))
+        .multiply(rotation);
 
-        ctx.moveTo(p.x , p.y);
-        for (var j = 1; j < lines[i].vertices.length; j++) {
-            p = lines[i].vertices[j].clone().multiplyScalar(drawScale);
-            ctx.lineTo(p.x , p.y);
+    trans2Dinverse = new THREE.Matrix4()
+        .multiply(new THREE.Matrix4().getInverse(rotation))
+        .multiplyScalar(1/scale);
+
+    canvas.onmousemove = function (e) {
+        render2D();
+
+        var rect = canvas.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var y = e.clientY - rect.top;
+
+        x *= canvas.width / rect.width;
+        y *= canvas.width / rect.width;
+
+        var mouseVector = new THREE.Vector3(x, y, 0);
+        var flatVector = mouseVector.applyMatrix4(trans2Dinverse);
+        flatVector.applyMatrix4(new THREE.Matrix4().makeTranslation(0, trans, 0))
+
+ //       var flatVector = mouseVector.applyMatrix4(new THREE.Matrix4().getInverse(trans2D));
+
+        // var m = flatVector.clone().applyMatrix4(trans2D);
+        // ctx.fillStyle = '#999';
+        // ctx.beginPath();
+        // ctx.arc(m.x,m.y, 8, 0, 2*Math.PI);
+        // ctx.fill();
+
+        var closest;
+        var closestDistance = Infinity;
+        for (var i = 0; i < flatGeometry.vertices.length; i++) {
+            var dist = flatGeometry.vertices[i].distanceTo(flatVector);
+            if (dist < closestDistance) {
+                closest = i;
+                closestDistance = dist;
+            }
         }
 
-    }
+        var p = flatGeometry.vertices[closest].clone().applyMatrix4(trans2D);
+        ctx.strokeStyle = '#700';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 8, 0, 2 * Math.PI);
+        ctx.fill();
+
+        writeMessage (x + " " + y + " " + closest);
+        
+        e.preventDefault();
+
+        function writeMessage(message) {
+            ctx.clearRect(0, 0, 100, 40);
+            ctx.font = '18pt Calibri';
+            ctx.fillStyle = 'black';
+            ctx.fillText(message, 10, 25);
+        }
+
+        if (vertexMesh === undefined)
+            return;
+
+        vertexMesh.position = geometry.vertices[closest];
+    };
 };
 
 function createScene() {
@@ -163,6 +223,10 @@ function createScene() {
     var directionalLight = new THREE.DirectionalLight(0x8888aa);
     directionalLight.position.set(-1, 1, 1).normalize();
     scene.add(directionalLight);
+
+    vertexGeometry = new THREE.SphereGeometry(0.01, 16, 16);
+    vertexMesh = new THREE.Mesh(vertexGeometry, new THREE.MeshBasicMaterial({ color:0x770000}));
+    scene.add(vertexMesh);
 }
 
 function createSprings(lines, distance, springK) {
@@ -210,16 +274,15 @@ function onWindowResize() {
 function animate() {
     requestAnimationFrame(animate, renderer.domElement);
 
-    render();
+    render3D();
+  //  render2D();
     controls.update();
     //stats.update();
 }
 
-var animGeometry
 var frame = 0;
-var maxPhysics = 100;
 //var geom = THREE.CubeGeometry(2, 2, 2);
-function render() {
+function render3D() {
     frame++;
     var time = new Date().getTime() / 1000;
 
@@ -244,11 +307,32 @@ function render() {
         setCookie("view", viewdata.join()); 
     }
 
-//    if (frame < maxPhysics)
-        physics.update(0.001);
+    physics.update(0.001);
+
   //  physics.update(time - lastTime);
     lastTime = time;
 }
+
+function render2D() {
+    if (ctx === undefined)
+        return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#888';
+
+    ctx.beginPath();
+    for (var i = 0; i < lines.length; i++) {
+        var p = lines[i].vertices[0].clone().applyMatrix4(trans2D);
+
+        ctx.moveTo(p.x , p.y);
+        for (var j = 1; j < lines[i].vertices.length; j++) {
+            p = lines[i].vertices[j].clone().applyMatrix4(trans2D);
+            ctx.lineTo(p.x , p.y);
+        }
+    }
+    ctx.stroke();
+}
+
 
 function saveObj() {
     var op = THREE.saveToObj(new THREE.Mesh(geometry, new THREE.MeshLambertMaterial()));
