@@ -1,6 +1,6 @@
 var renderer, camera, settings, container3D, panels, scene
 var material, geometry, physics, flatGeometry;
-var mesh, lines, curves;
+var mesh, lines, curves, isMirror;
 var vertexGeometry, vertexMesh;
 var trans2D, trans2Dinverse, canvas, ctx;
 var objModel = [];
@@ -58,16 +58,15 @@ function init() {
     };
 
    // var patternFile = 'resources/json3D/cylinder2.js';
-    var patternFile = 'resources/json3D/dress11-28.js';
+    isMirror = true;
+    var patternFile = 'resources/json3D/tshirt-34.js';
 
     loadpart( patternFile, function ( geometries, lines, curves ) { loadGeometry(geometries, lines, curves); } );
-           
-
-
 
     settings = new Settings();
 }
 
+var foundGround = false;
 function loadGeometry(geometries, lines, curves) {
     var g = geometries.shift();
     while (geometries.length > 0)
@@ -89,7 +88,7 @@ function loadGeometry(geometries, lines, curves) {
     }
 
     createSprings(lines);
-    createSprings(curves, 0, springiness * 2);
+    createSprings(curves, 0, springiness * 8);
 
     geometry.computeBoundingBox();
     create2D(geometry.boundingBox);
@@ -99,16 +98,51 @@ function loadGeometry(geometries, lines, curves) {
     var xDist = geometry.boundingBox.size().x + xOffset;
     var thetaOffset = Math.PI * (xOffset / xDist + 1 / 2); 
     var r = xDist / Math.PI / 2;
+    var span = 2 * Math.PI;
     var elliptical = 1.2;
+
+    if (isMirror) {
+        r *= 2;
+        span /= 2; 
+        thetaOffset -= Math.PI / 2;
+        elliptical = 1;
+    }
+
     for (var k = 0; k < geometry.vertices.length; k++) {
-        var theta = geometry.vertices[k].x / xDist * 2 * Math.PI - thetaOffset;
-        geometry.vertices[k].set(r * Math.sin(theta) * elliptical, geometry.vertices[k].y, r * Math.cos(theta) / elliptical);
+        var theta = geometry.vertices[k].x / xDist * span - thetaOffset;
+        geometry.vertices[k].set(
+            r * Math.sin(theta) * elliptical, 
+            geometry.vertices[k].y, 
+            r * Math.cos(theta) / elliptical);
         physics.points[k].position = geometry.vertices[k];
         physics.points[k].oldPosition = geometry.vertices[k].clone();
+
+        if (isMirror && numbersAreEqual(geometry.vertices[k].x, 0))
+            physics.points[k].multiplier = new THREE.Vector3(0, 1, 1);
+
+        if (numbersAreEqual(geometry.vertices[k].y, 0))
+            physics.points[k].multiplier = new THREE.Vector3(1, 0, 1);
+
+        if (!foundGround && numbersAreEqual(geometry.vertices[k].x, 0) && numbersAreEqual(geometry.vertices[k].y, 0)) {
+            foundGround = true;
+    //        physics.points[k].multiplier = new THREE.Vector3(0, 0, 0);
+        }
+
     }
 
     createScene();
 }
+
+var accuracy = 1E-3;
+var accuracySquared = accuracy * accuracy;
+function pointsAreEqual(a, b) {
+    return a.distanceToSquared(b) < accuracySquared;
+}
+
+function numbersAreEqual(a, b) {
+    return Math.abs(a, b) < accuracy ;
+}
+
 
 function create2D(box) {
     canvas = document.getElementById('c');
@@ -134,6 +168,8 @@ function create2D(box) {
         .multiply(new THREE.Matrix4().getInverse(rotation))
         .multiplyScalar(1/scale);
 
+    render2D();
+
     canvas.onmousemove = function (e) {
         render2D();
 
@@ -141,8 +177,9 @@ function create2D(box) {
         var x = e.clientX - rect.left;
         var y = e.clientY - rect.top;
 
-        x *= canvas.width / rect.width;
-        y *= canvas.width / rect.width;
+        var canvasScale = canvas.width / rect.width;
+        x *= canvasScale;
+        y *= canvasScale;  // intionally same aspect ratio
 
         var mouseVector = new THREE.Vector3(x, y, 0);
         var flatVector = mouseVector.applyMatrix4(trans2Dinverse);
@@ -173,7 +210,7 @@ function create2D(box) {
         ctx.fill();
 
         writeMessage (x + " " + y + " " + closest);
-        
+
         e.preventDefault();
 
         function writeMessage(message) {
@@ -233,18 +270,23 @@ function createSprings(lines, distance, springK) {
     springK = springK || springiness;
 
     for (var i = 0; i < lines.length; i++) {
-        lines[i].vertexIndices = [];
+        var vertexIndices = lines[i].vertexIndices = [];
         for (var j = 0; j < lines[i].vertices.length; j++) {
             for (var k = 0; k < geometry.vertices.length; k++) {
-                if ((new THREE.Vector3()).subVectors(lines[i].vertices[j], geometry.vertices[k]).length() < 1E-4) {
-                    lines[i].vertexIndices[j] = k;
+                if ((new THREE.Vector3()).subVectors(lines[i].vertices[j], geometry.vertices[k]).length() < accuracy) {
+                    vertexIndices[j] = k;
                     break;
                 }
             }
 
-            if (k == geometry.vertices.length)
+            if (k == geometry.vertices.length) 
                 console.log('no point found');
         }
+
+        var a = geometry.points[vertexIndices[0]];
+        var b = geometry.points[vertexIndices[lines[i].vertices.length - 1]];
+        a.neighbors.push(b);
+        b.neighbors.push(a);
     }
 
     for (var i = 0; i < lines.length; i++) {
@@ -307,7 +349,7 @@ function render3D() {
         setCookie("view", viewdata.join()); 
     }
 
-    physics.update(0.001);
+    physics.update(0.004);
 
   //  physics.update(time - lastTime);
     lastTime = time;
