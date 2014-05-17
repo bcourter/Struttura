@@ -19,23 +19,18 @@ Physics.prototype.update = function (timeDelta) {
 	while (i--)	
 		this.constraints[i].computeForces();
 
-	var center = new THREE.Vector3();
-	var i = this.points.length;
-	while (i--)	
-		center.add(this.points[i].position);
-
     var cg  = new THREE.Vector3();
 	i = this.points.length;
 	while (i--)	{
 		var p = this.points[i];
 //		p.sumForces.add(this.averageDrift);
-		p.sumForces.sub(
-			new THREE.Vector3()
-				.add(p.position)
-				.sub(center)
-				.setLength(0.01)
-				.multiply(this.anisotropy)
-		);
+		// p.sumForces.sub(
+		// 	new THREE.Vector3()
+		// 		.add(p.position)
+		// 		.sub(center)
+		// 		.setLength(0.01)
+		// 		.multiply(this.anisotropy)
+		// );
 
 	//	p.position.add(this.centerShift.multiply(p.multiplier));
 		this.points[i].update(timeDelta);
@@ -51,7 +46,8 @@ Physics.prototype.update = function (timeDelta) {
 
 	this.lastCenter = this.center;
 	this.center = cg.divideScalar(this.points.length);
-	this.centerShift = this.lastCenter.clone().sub(this.center).multiplyScalar(0.5);
+
+//	this.centerShift = this.lastCenter.clone().sub(this.center).multiplyScalar(0.5);
 }
 
 var Point = function (position, mass) {
@@ -60,6 +56,7 @@ var Point = function (position, mass) {
     this.oldPosition = position.clone();
     this.multiplier = new THREE.Vector3(1, 1, 1);
     this.neighbors = [];
+    this.neighborsSq = [];
     this.stiffness = 0.01;
     this.sumForces = new THREE.Vector3(); 
 };
@@ -68,6 +65,7 @@ Point.prototype.update = function (timeDelta) {
 	var phys = new Physics();
 	this.sumForces.add(phys.gravity.clone().multiplyScalar(this.mass));
 
+	/// Attempt at continuity via average vector
 	// var normal = new THREE.Vector3();
 	// var i = this.neighbors.length;
 	// while (i--)	
@@ -83,6 +81,22 @@ Point.prototype.update = function (timeDelta) {
 	// 			normal.dot(this.neighbors[i].position) * this.stiffness)
 	// 	);
 
+
+	/// neighbor repuslsion, replaced with neighbor springs
+	var repulsionset = this.neighborsSq;
+
+	var i = repulsionset.length - 1;
+	var diffforce = 6E-2;
+	while (i-- > 0)	{
+		var j = repulsionset.length - 1;
+		while (j-- != i) {
+			var diff = repulsionset[i].position.clone().sub(repulsionset[j].position);
+			diff.setLength(diffforce);
+			repulsionset[i].sumForces.add(diff);
+			repulsionset[j].sumForces.sub(diff);
+		}
+	}
+	
 	var temp = this.position.clone();
 	this.position.multiplyScalar(1 + phys.dampening)
 		.sub(this.oldPosition.multiplyScalar(phys.dampening))

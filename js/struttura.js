@@ -268,6 +268,8 @@ function createScene() {
 
 function createSprings(lines, distance, springK) {
     springK = springK || springiness;
+    var springKFirst = springK * 1E-2;
+    var springKSecond = springKFirst * 1E-1;
 
     for (var i = 0; i < lines.length; i++) {
         var vertexIndices = lines[i].vertexIndices = [];
@@ -302,6 +304,34 @@ function createSprings(lines, distance, springK) {
         physics.constraints.push(spring);
     }
 
+    for (var i = 0; i < physics.points.length; i++) {
+        var center = physics.points[i];
+        for (var j = 0; j < center.neighbors.length; j++) {
+            var first = center.neighbors[j];
+
+            for (var k = 0; k < j; k++) {
+                var other = center.neighbors[k];
+            
+                var spring = new Spring(
+                    first,
+                    other,
+                    springKFirst);
+
+                spring.distance = (first.position.distanceTo(center.position) + other.position.distanceTo(center.position)) * 2;
+
+               physics.constraints.push(spring);
+            }
+          
+            for (var k = 0; k < first.neighbors.length; k++) {
+                var second = first.neighbors[k];
+                if (second != center && -1 != first.neighborsSq.indexOf(second)) {
+                    first.neighborsSq.push(second);
+                    second.neighborsSq.push(first);
+                }
+
+            }
+        }
+    }
 }
 
 function onWindowResize() {
