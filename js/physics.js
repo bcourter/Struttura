@@ -5,30 +5,37 @@ var Physics = function () {
     this.points = []; 
     this.constraints = []; 
 
-//    this.gravity = new THREE.Vector3(0, 0, -9.8;
+    this.time = 0;
+ //  this.gravity = new THREE.Vector3(0, 0, -9.8);
     this.gravity = new THREE.Vector3(0, 0, 0);
     this.dampening = 0.9;
-    this.anisotropy = new THREE.Vector3(1.25, 0.25, 0.5);
+    this.anisotropy = new THREE.Vector3(1.5, 1, 1);
     this.center = new THREE.Vector3();
     this.lastCenter = new THREE.Vector3();
     this.centerShift = new THREE.Vector3();
 };
 
 Physics.prototype.update = function (timeDelta) {
+	this.time += timeDelta;
+
 	var i = this.constraints.length;
 	while (i--)	
-		this.constraints[i].computeForces();
+		this.constraints[i].computeForces(this.time);
+
+	var center = new THREE.Vector3();
+	var i = this.points.length;
+	while (i--)	
+		center.add(this.points[i].position);
 
     var cg  = new THREE.Vector3();
 	i = this.points.length;
 	while (i--)	{
 		var p = this.points[i];
-//		p.sumForces.add(this.averageDrift);
+	//	p.sumForces.add(this.averageDrift);
 		// p.sumForces.sub(
 		// 	new THREE.Vector3()
 		// 		.add(p.position)
-		// 		.sub(center)
-		// 		.setLength(0.01)
+		// 		.setLength(-0.001)
 		// 		.multiply(this.anisotropy)
 		// );
 
@@ -56,6 +63,7 @@ var Point = function (position, mass) {
     this.oldPosition = position.clone();
     this.multiplier = new THREE.Vector3(1, 1, 1);
     this.neighbors = [];
+    this.neighborDists = [];
     this.neighborsSq = [];
     this.stiffness = 0.01;
     this.sumForces = new THREE.Vector3(); 
@@ -83,19 +91,19 @@ Point.prototype.update = function (timeDelta) {
 
 
 	/// neighbor repuslsion, replaced with neighbor springs
-	var repulsionset = this.neighborsSq;
+	// var repulsionset = this.neighborsSq;
 
-	var i = repulsionset.length - 1;
-	var diffforce = 6E-2;
-	while (i-- > 0)	{
-		var j = repulsionset.length - 1;
-		while (j-- != i) {
-			var diff = repulsionset[i].position.clone().sub(repulsionset[j].position);
-			diff.setLength(diffforce);
-			repulsionset[i].sumForces.add(diff);
-			repulsionset[j].sumForces.sub(diff);
-		}
-	}
+	// var i = repulsionset.length - 1;
+	// var diffforce = 6E-2;
+	// while (i-- > 0)	{
+	// 	var j = repulsionset.length - 1;
+	// 	while (j-- != i) {
+	// 		var diff = repulsionset[i].position.clone().sub(repulsionset[j].position);
+	// 		diff.setLength(diffforce);
+	// 		repulsionset[i].sumForces.add(diff);
+	// 		repulsionset[j].sumForces.sub(diff);
+	// 	}
+	// }
 	
 	var temp = this.position.clone();
 	this.position.multiplyScalar(1 + phys.dampening)
@@ -115,16 +123,48 @@ var Spring = function (a, b, k) {
     this.k = k || 1;
 
     this.distance = a.position.distanceTo(b.position);
+    this.max = 1E-3;
+    this.startTime = 0;
 };
 
-Spring.prototype.computeForces = function() {
+Spring.prototype.computeForces = function(time) {
+	if (this.startTime > time)
+		return;
+
 	var separation = this.a.position.clone().sub(this.b.position);
 	var dist = this.distance;
 	var delta = dist - separation.length();
+	delta = Math.min(Math.abs(delta), this.max) * ((delta > 0) ? 1 : -1);
 
 //	delta.multiplyScalar(dist * dist / (delta * delta + dist * dist) - 0.5);
 
 	separation.setLength(this.k * delta / 2);
+	this.a.sumForces.add(separation);
+	this.b.sumForces.sub(separation);
+}
+
+var Stitch = function (a, b, k) {
+    this.a = a; 
+    this.b = b; 
+    this.k = k || 1;
+
+    this.distance = a.position.distanceTo(b.position);
+    this.max = 1E-3;
+    this.startTime = 0;
+};
+
+Stitch.prototype.computeForces = function(time) {
+	if (this.startTime > time)
+		return;
+
+	var separation = this.a.position.clone().sub(this.b.position);
+	var dist = this.distance;
+	var delta = dist - separation.length();
+	delta = Math.max(delta, this.max);
+
+//	delta.multiplyScalar(dist * dist / (delta * delta + dist * dist) - 0.5);
+
+	separation.setLength(this.k / delta);
 	this.a.sumForces.add(separation);
 	this.b.sumForces.sub(separation);
 }

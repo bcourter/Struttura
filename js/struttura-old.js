@@ -59,7 +59,7 @@ function init() {
 
    // var patternFile = 'resources/json3D/cylinder2.js';
     isMirror = true;
-    var patternFile = 'resources/json3D/tshirt-36.js';
+    var patternFile = 'resources/json3D/tshirt-34.js';
 
     loadpart( patternFile, function ( geometries, lines, curves ) { loadGeometry(geometries, lines, curves); } );
 
@@ -81,39 +81,18 @@ function loadGeometry(geometries, lines, curves) {
 
     physics = new Physics();
 
+
     for (var k = 0; k < geometry.vertices.length; k++) {
         geometry.points[k] = new Point(geometry.vertices[k], pointmass);
         physics.points.push(geometry.points[k]);
-    }   
-
-
-    for (var i = 0; i < curves.length; i++) {
-        var vertexIndices = curves[i].vertexIndices = [];
-        for (var j = 0; j < curves[i].vertices.length; j++) {
-            for (var k = 0; k < geometry.vertices.length; k++) {
-                if ((new THREE.Vector3()).subVectors(lines[i].vertices[j], geometry.vertices[k]).length() < accuracy) {
-                    vertexIndices[j] = k;
-                    break;
-                }
-            }
-
-            if (k == geometry.vertices.length) 
-                console.log('no point found');
-        }
-
-        var a = geometry.points[vertexIndices[0]];
-        var b = geometry.points[vertexIndices[curves[i].vertices.length - 1]];
-
-        a.neighbors = b.neighbors;
-        a.neighborDists = b.neighborDists;
     }
+
+    createSprings(lines);
+    createSprings(curves, 0, springiness * 8);
 
     geometry.computeBoundingBox();
     create2D(geometry.boundingBox);
     flatGeometry = geometry.clone();
-
-    createSprings(lines);
-    createSprings(curves, 0, springiness * 10);
 
     var xOffset = geometry.boundingBox.min.x;
     var xDist = geometry.boundingBox.size().x + xOffset;
@@ -131,11 +110,10 @@ function loadGeometry(geometries, lines, curves) {
 
     for (var k = 0; k < geometry.vertices.length; k++) {
         var theta = geometry.vertices[k].x / xDist * span - thetaOffset;
-        var z = -geometry.vertices[k].z;
         geometry.vertices[k].set(
-            (r + z) * Math.sin(theta) * elliptical, 
+            r * Math.sin(theta) * elliptical, 
             geometry.vertices[k].y, 
-            (r + z) * Math.cos(theta) / elliptical);
+            r * Math.cos(theta) / elliptical);
         physics.points[k].position = geometry.vertices[k];
         physics.points[k].oldPosition = geometry.vertices[k].clone();
 
@@ -218,7 +196,7 @@ function create2D(box) {
         var closest;
         var closestDistance = Infinity;
         for (var i = 0; i < flatGeometry.vertices.length; i++) {
-            var dist = flatGeometry.vertices[i].clone().setZ(0).distanceTo(flatVector);
+            var dist = flatGeometry.vertices[i].distanceTo(flatVector);
             if (dist < closestDistance) {
                 closest = i;
                 closestDistance = dist;
@@ -231,7 +209,7 @@ function create2D(box) {
         ctx.arc(p.x, p.y, 8, 0, 2 * Math.PI);
         ctx.fill();
 
-        writeMessage (x + " " + y + " " + physics.points.length + " " + physics.constraints.length);
+        writeMessage (x + " " + y + " " + closest);
 
         e.preventDefault();
 
@@ -290,7 +268,7 @@ function createScene() {
 
 function createSprings(lines, distance, springK) {
     springK = springK || springiness;
-    var springKFirst = springK * 1E-6;
+    var springKFirst = springK * 1E-2;
     var springKSecond = springKFirst * 1E-1;
 
     for (var i = 0; i < lines.length; i++) {
@@ -303,40 +281,21 @@ function createSprings(lines, distance, springK) {
                 }
             }
 
-            if (k == geometry.vertices.length) {
-                geometry.vertices.push(lines[i].vertices[j]);
-                geometry.points.push(new Point(geometry.vertices[k], pointmass));
-                geometry.points[k].multiplier = new THREE.Vector3(0, 0, 0);
-                physics.points.push(geometry.points[k]);
-
-                vertexIndices[j] = k;
-               // console.log('no point found');
-            }
+            if (k == geometry.vertices.length) 
+                console.log('no point found');
         }
 
         var a = geometry.points[vertexIndices[0]];
         var b = geometry.points[vertexIndices[lines[i].vertices.length - 1]];
         a.neighbors.push(b);
         b.neighbors.push(a);
-
-        var dist = a.position.distanceTo(b.position);
-        a.neighborDists.push(dist);
-        b.neighborDists.push(dist);
     }
 
     for (var i = 0; i < lines.length; i++) {
-        var a = geometry.points[lines[i].vertexIndices[0]];
-        var b = geometry.points[lines[i].vertexIndices[lines[i].vertexIndices.length - 1]];
-
-        var spring = new Spring(a, b, springK);
-
-        if (distance == 0)
-            spring.max = 1E-4;
-
-        // if (a.position.clone().sub(b.position).y > accuracy)
-        //     spring.startTime = 3;
-            spring.startTime = a.position.y;
-
+        var spring = new Spring(
+            geometry.points[lines[i].vertexIndices[0]],
+            geometry.points[lines[i].vertexIndices[lines[i].vertexIndices.length - 1]],
+            springK);
 
         if (distance !== undefined) {
             spring.distance = distance;
@@ -345,50 +304,34 @@ function createSprings(lines, distance, springK) {
         physics.constraints.push(spring);
     }
 
-    for (var i = 0; i < physics.points.length; i++) {
-        var center = physics.points[i];
-        for (var j = 0; j < center.neighbors.length; j++) {
-            var first = center.neighbors[j];
-            var firstDist = center.neighborDists[j];
+    // for (var i = 0; i < physics.points.length; i++) {
+    //     var center = physics.points[i];
+    //     for (var j = 0; j < center.neighbors.length; j++) {
+    //         var first = center.neighbors[j];
 
-            for (var k = 0; k < j; k++) {
-                var other = center.neighbors[k];
-                var otherDist = center.neighborDists[k];
-
-                if (first.neighbors.indexOf(other) != -1) continue;
-
-                var isSeam = false;
-                for (var l = 0; l < physics.constraints.length; l++) {
-                    var cons = physics.constraints[l];
-                    if ((cons.a == first && cons.b == other) || (cons.a == other && cons.b == first)) {
-                        isSeam = true;
-                        break;
-                    }
-                }
-                if (isSeam) continue;
-
+    //         for (var k = 0; k < j; k++) {
+    //             var other = center.neighbors[k];
             
-                var spring = new Spring(
-                    first,
-                    other,
-                    springKFirst);
+    //             var spring = new Spring(
+    //                 first,
+    //                 other,
+    //                 springKFirst);
 
-                spring.distance = (firstDist + otherDist) * 1.5;
-                spring.max = 1E-4;
+    //             spring.distance = (first.position.distanceTo(center.position) + other.position.distanceTo(center.position)) * 2;
 
-                physics.constraints.push(spring);
-            }
+    //            physics.constraints.push(spring);
+    //         }
           
-            // for (var k = 0; k < first.neighbors.length; k++) {
-            //     var second = first.neighbors[k];
-            //     if (second != center && -1 != first.neighborsSq.indexOf(second)) {
-            //         first.neighborsSq.push(second);
-            //         second.neighborsSq.push(first);
-            //     }
+    //         for (var k = 0; k < first.neighbors.length; k++) {
+    //             var second = first.neighbors[k];
+    //             if (second != center && -1 != first.neighborsSq.indexOf(second)) {
+    //                 first.neighborsSq.push(second);
+    //                 second.neighborsSq.push(first);
+    //             }
 
-            // }
-        }
-    }
+    //         }
+    //     }
+    // }
 }
 
 function onWindowResize() {
@@ -460,21 +403,6 @@ function render2D() {
         }
     }
     ctx.stroke();
-
-
-    // ctx.strokeStyle = '#680';
-
-    // ctx.beginPath();
-    // for (var i = 0; i < curves.length; i++) {
-    //     var p = curves[i].vertices[0].clone().applyMatrix4(trans2D);
-
-    //     ctx.moveTo(p.x , p.y);
-    //     for (var j = 1; j < curves[i].vertices.length; j++) {
-    //         p = curves[i].vertices[j].clone().applyMatrix4(trans2D);
-    //         ctx.lineTo(p.x , p.y);
-    //     }
-    // }
-    // ctx.stroke();
 }
 
 
