@@ -10,6 +10,9 @@ var lastTime = 0, lastAnimation = 0, lastRotation = 0;
 var pointmass = 0.001;  //kg
 var springiness = 10;
 
+var accuracy = 1E-3;
+var accuracySquared = accuracy * accuracy;
+
 init();
 animate();
 
@@ -21,9 +24,9 @@ function init() {
     renderer.setSize(width, height);
     container3D.appendChild(renderer.domElement);
 
-    camera = new THREE.PerspectiveCamera(5, width / height, 1, 1000);
+    camera = new THREE.PerspectiveCamera(10, width / height, 1, 1000);
     camera.position.y = 5;
-    camera.position.z = 30;
+    camera.position.z = 10;
 
     var cookie = getCookie("view");
     if (cookie !== undefined   ) {
@@ -53,14 +56,10 @@ function init() {
 
     window.addEventListener('resize', onWindowResize, false);
 
-    var Settings = function () {
-        document.getElementById("saveObj").onclick = saveObj;
-    };
-
    // var patternFile = 'resources/json3D/cylinder2.js';
     var patternFile = getGetValue("pattern");
     if (patternFile == null)
-        patternFile = 'tshirt-36.js';
+        patternFile = 'tshirt-44.js';
 
     patternFile = 'resources/json3D/' + patternFile;
 
@@ -70,17 +69,15 @@ function init() {
 
     loadpart(patternFile, function (geometries, lines, curves) { loadGeometry(geometries, lines, curves); });
 
-    settings = new Settings();
 }
 
-var foundGround = false;
 function loadGeometry(geometries, lines, curves) {
     var g = geometries.shift();
     while (geometries.length > 0)
         THREE.GeometryUtils.merge(g, geometries.shift());
 
     this.lines = lines;
-    this.cuves = curves;
+    this.curves = curves;
 
     g.mergeVertices();
     geometry = g;
@@ -93,12 +90,11 @@ function loadGeometry(geometries, lines, curves) {
         physics.points.push(geometry.points[k]);
     }   
 
-
     for (var i = 0; i < curves.length; i++) {
         var vertexIndices = curves[i].vertexIndices = [];
         for (var j = 0; j < curves[i].vertices.length; j++) {
             for (var k = 0; k < geometry.vertices.length; k++) {
-                if ((new THREE.Vector3()).subVectors(lines[i].vertices[j], geometry.vertices[k]).length() < accuracy) {
+                if ((new THREE.Vector3()).subVectors(curves[i].vertices[j], geometry.vertices[k]).length() < accuracy) {
                     vertexIndices[j] = k;
                     break;
                 }
@@ -110,6 +106,9 @@ function loadGeometry(geometries, lines, curves) {
 
         var a = geometry.points[vertexIndices[0]];
         var b = geometry.points[vertexIndices[curves[i].vertices.length - 1]];
+
+        if (a === undefined || b === undefined)
+            continue;
 
         a.neighbors = b.neighbors;
         a.neighborDists = b.neighborDists;
@@ -127,13 +126,12 @@ function loadGeometry(geometries, lines, curves) {
     var thetaOffset = Math.PI * (xOffset / xDist + 1 / 2); 
     var r = xDist / Math.PI / 2;
     var span = 2 * Math.PI;
-    var elliptical = 1.2;
+    var elliptical = 1.4;
 
     if (isMirror) {
         r *= 2;
         span /= 2; 
         thetaOffset -= Math.PI / 2;
-        elliptical = 1;
     }
 
     for (var k = 0; k < geometry.vertices.length; k++) {
@@ -152,18 +150,11 @@ function loadGeometry(geometries, lines, curves) {
         if (numbersAreEqual(geometry.vertices[k].y, 0))
             physics.points[k].multiplier = new THREE.Vector3(1, 0, 1);
 
-        if (!foundGround && numbersAreEqual(geometry.vertices[k].x, 0) && numbersAreEqual(geometry.vertices[k].y, 0)) {
-            foundGround = true;
-    //        physics.points[k].multiplier = new THREE.Vector3(0, 0, 0);
-        }
-
     }
 
     createScene();
 }
 
-var accuracy = 1E-3;
-var accuracySquared = accuracy * accuracy;
 function pointsAreEqual(a, b) {
     return a.distanceToSquared(b) < accuracySquared;
 }
@@ -185,21 +176,27 @@ function create2D(box) {
     canvas.height = spoonflowerheight * scale;
 
     var padding = 10;
+    var skewZfactor = -2;
     var scaleX = (canvas.width - 2 * padding) / (box.size().x + 2 * box.min.x);
     var scaleY = (canvas.height - 2 * padding) / (box.size().y);
     var scale = Math.min(scaleX, scaleY);
     var transX = padding / scale;
-    var transY = box.size().y + box.min.y + padding / scale;
+    var transY = box.size().y + box.min.y + padding / scale + box.min.z * skewZfactor / 1.8;
     var rotation = new THREE.Matrix4().makeRotationX(Math.PI);
+    var skewZ = new THREE.Matrix4();
+    skewZ.elements[9] = skewZfactor;
 
     trans2D = new THREE.Matrix4()
+        .multiply(skewZ)
         .multiplyScalar(scale)
         .multiply(new THREE.Matrix4().makeTranslation(transX, transY, 0))
-        .multiply(rotation);
+        .multiply(rotation)
+        ;
 
     trans2Dinverse = new THREE.Matrix4()
         .multiply(new THREE.Matrix4().getInverse(rotation))
-        .multiplyScalar(1/scale);
+        .multiplyScalar(1/scale)
+        .multiply(new THREE.Matrix4().getInverse(skewZ));
 
     render2D();
 
@@ -214,22 +211,14 @@ function create2D(box) {
         x *= canvasScale;
         y *= canvasScale;  // intionally same aspect ratio
 
-        var mouseVector = new THREE.Vector3(x - 2 *padding, y, 0);
-        var flatVector = mouseVector.applyMatrix4(trans2Dinverse);
-        flatVector.applyMatrix4(new THREE.Matrix4().makeTranslation(transX, transY, 0))
-
- //       var flatVector = mouseVector.applyMatrix4(new THREE.Matrix4().getInverse(trans2D));
-
-        // var m = flatVector.clone().applyMatrix4(trans2D);
-        // ctx.fillStyle = '#999';
-        // ctx.beginPath();
-        // ctx.arc(m.x,m.y, 8, 0, 2*Math.PI);
-        // ctx.fill();
+        var mouseVector = new THREE.Vector3(x, y, 0);
+    //    var flatVector = mouseVector.applyMatrix4(trans2Dinverse);
+    //    flatVector.applyMatrix4(new THREE.Matrix4().makeTranslation(transX, transY, 0))
 
         var closest;
         var closestDistance = Infinity;
         for (var i = 0; i < flatGeometry.vertices.length; i++) {
-            var dist = flatGeometry.vertices[i].clone().setZ(0).distanceTo(flatVector);
+            var dist = flatGeometry.vertices[i].clone().applyMatrix4(trans2D).setZ(0).distanceTo(mouseVector);
             if (dist < closestDistance) {
                 closest = i;
                 closestDistance = dist;
@@ -237,19 +226,19 @@ function create2D(box) {
         }
 
         var p = flatGeometry.vertices[closest].clone().applyMatrix4(trans2D);
-        ctx.strokeStyle = '#700';
+        ctx.fillStyle = '#700';
         ctx.beginPath();
         ctx.arc(p.x, p.y, 8, 0, 2 * Math.PI);
         ctx.fill();
 
-        writeMessage (x + " " + y + " " + physics.points.length + " " + physics.constraints.length);
+     //   writeMessage (x + " " + y + " " + physics.points.length + " " + physics.constraints.length);
 
         e.preventDefault();
 
         function writeMessage(message) {
             ctx.clearRect(0, 0, 100, 40);
             ctx.font = '18pt Calibri';
-            ctx.fillStyle = 'black';
+            ctx.fillStyle = 'gray';
             ctx.fillText(message, 10, 25);
         }
 
@@ -281,6 +270,12 @@ function createScene() {
     scene = new THREE.Scene();
     scene.add(THREE.SceneUtils.createMultiMaterialObject(geometry, material));
 
+    if (isMirror) {
+        var mirrorObj = THREE.SceneUtils.createMultiMaterialObject(geometry, material);
+        mirrorObj.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
+        scene.add(mirrorObj);
+    }
+
     var ambientLight = new THREE.AmbientLight(0x666666);
     scene.add(ambientLight);
 
@@ -301,7 +296,7 @@ function createScene() {
 
 function createSprings(lines, distance, springK) {
     springK = springK || springiness;
-    var springKFirst = springK * 1E-6;
+    var springKFirst = springK * 1E-3;
     var springKSecond = springKFirst * 1E-1;
 
     for (var i = 0; i < lines.length; i++) {
@@ -315,7 +310,7 @@ function createSprings(lines, distance, springK) {
             }
 
             if (k == geometry.vertices.length) {
-                geometry.vertices.push(lines[i].vertices[j]);
+                geometry.vertices.push(lines[i].vertices[j].clone());
                 geometry.points.push(new Point(geometry.vertices[k], pointmass));
                 geometry.points[k].multiplier = new THREE.Vector3(0, 0, 0);
                 physics.points.push(geometry.points[k]);
@@ -342,7 +337,7 @@ function createSprings(lines, distance, springK) {
         var spring = new Spring(a, b, springK);
 
         if (distance == 0)
-            spring.max = 1E-4;
+            spring.max = 3E-4;
 
         // if (a.position.clone().sub(b.position).y > accuracy)
         //     spring.startTime = 3;
@@ -384,8 +379,8 @@ function createSprings(lines, distance, springK) {
                     other,
                     springKFirst);
 
-                spring.distance = (firstDist + otherDist) * 1.5;
-                spring.max = 1E-4;
+                spring.distance = (firstDist + otherDist) * 3;
+                spring.max = 1E-3;
 
                 physics.constraints.push(spring);
             }
@@ -447,7 +442,7 @@ function render3D() {
         setCookie("view", viewdata.join()); 
     }
 
-    physics.update(0.004);
+    physics.update(0.006);
 
   //  physics.update(time - lastTime);
     lastTime = time;
@@ -458,7 +453,7 @@ function render2D() {
         return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = '#888';
+    ctx.strokeStyle = '#aaa';
 
     ctx.beginPath();
     for (var i = 0; i < lines.length; i++) {
@@ -472,20 +467,19 @@ function render2D() {
     }
     ctx.stroke();
 
+    ctx.strokeStyle = '#00b';
 
-    // ctx.strokeStyle = '#680';
+    ctx.beginPath();
+    for (var i = 0; i < curves.length; i++) {
+        var p = curves[i].vertices[0].clone().applyMatrix4(trans2D);
 
-    // ctx.beginPath();
-    // for (var i = 0; i < curves.length; i++) {
-    //     var p = curves[i].vertices[0].clone().applyMatrix4(trans2D);
-
-    //     ctx.moveTo(p.x , p.y);
-    //     for (var j = 1; j < curves[i].vertices.length; j++) {
-    //         p = curves[i].vertices[j].clone().applyMatrix4(trans2D);
-    //         ctx.lineTo(p.x , p.y);
-    //     }
-    // }
-    // ctx.stroke();
+        ctx.moveTo(p.x , p.y);
+        for (var j = 1; j < curves[i].vertices.length; j++) {
+            p = curves[i].vertices[j].clone().applyMatrix4(trans2D);
+            ctx.lineTo(p.x , p.y);
+        }
+    }
+    ctx.stroke();
 }
 
 
@@ -494,8 +488,6 @@ function saveObj() {
 
     var newWindow = window.open("");
     newWindow.document.write(op);
-
-    //console.log(op);
 }
 
 THREE.saveToObj = function (object3d) {

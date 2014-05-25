@@ -5,18 +5,18 @@
     <title>Struttura</title>
 
     <link rel="stylesheet" type="text/css" href="struttura.css" />
-<   <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
 </head>
 
 <body>
-
-    <label>
-        <input type="button" id='saveObj' />
-        Save OBJ
-     </label>
-
     <div class="content grid">
-        <div id="3d" class="col s1of2"></div>
+        <div id="3d" class="col s1of2" >
+            <div class="panel">
+                <span style="float:left;"> [ <a href=/>Shirt</a> | 
+                <a href=/?pattern=dress21-28.js&mirror=0>Dress</a> ] </span>
+                <span style="float:right;"> <a href="#" onclick="saveObj(); return false;">Save OBJ</a> </span>
+            </div>
+        </div>
 
         <canvas id="c" class="col s1of2"></canvas>
     </div>
