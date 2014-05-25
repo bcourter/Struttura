@@ -58,10 +58,17 @@ function init() {
     };
 
    // var patternFile = 'resources/json3D/cylinder2.js';
-    isMirror = true;
-    var patternFile = 'resources/json3D/tshirt-36.js';
+    var patternFile = getGetValue("pattern");
+    if (patternFile == null)
+        patternFile = 'tshirt-36.js';
 
-    loadpart( patternFile, function ( geometries, lines, curves ) { loadGeometry(geometries, lines, curves); } );
+    patternFile = 'resources/json3D/' + patternFile;
+
+    isMirror = getGetValue("mirror") == "0" ? false :  true;;
+    if (patternFile == null)
+        isMirror = true;
+
+    loadpart(patternFile, function (geometries, lines, curves) { loadGeometry(geometries, lines, curves); });
 
     settings = new Settings();
 }
@@ -177,13 +184,17 @@ function create2D(box) {
     canvas.width = spoonflowerwidth * scale;
     canvas.height = spoonflowerheight * scale;
 
-    var scale = canvas.width / (box.size().x + 2 * box.min.x);
-    var trans = box.size().y + box.min.y;
+    var padding = 10;
+    var scaleX = (canvas.width - 2 * padding) / (box.size().x + 2 * box.min.x);
+    var scaleY = (canvas.height - 2 * padding) / (box.size().y);
+    var scale = Math.min(scaleX, scaleY);
+    var transX = padding / scale;
+    var transY = box.size().y + box.min.y + padding / scale;
     var rotation = new THREE.Matrix4().makeRotationX(Math.PI);
 
     trans2D = new THREE.Matrix4()
         .multiplyScalar(scale)
-        .multiply(new THREE.Matrix4().makeTranslation(0, trans, 0))
+        .multiply(new THREE.Matrix4().makeTranslation(transX, transY, 0))
         .multiply(rotation);
 
     trans2Dinverse = new THREE.Matrix4()
@@ -203,9 +214,9 @@ function create2D(box) {
         x *= canvasScale;
         y *= canvasScale;  // intionally same aspect ratio
 
-        var mouseVector = new THREE.Vector3(x, y, 0);
+        var mouseVector = new THREE.Vector3(x - 2 *padding, y, 0);
         var flatVector = mouseVector.applyMatrix4(trans2Dinverse);
-        flatVector.applyMatrix4(new THREE.Matrix4().makeTranslation(0, trans, 0))
+        flatVector.applyMatrix4(new THREE.Matrix4().makeTranslation(transX, transY, 0))
 
  //       var flatVector = mouseVector.applyMatrix4(new THREE.Matrix4().getInverse(trans2D));
 
@@ -566,4 +577,16 @@ function getCookie(c_name) {
             return unescape(y);
         }
     }
+}
+
+function getGetValue(key){
+    var location = window.location.search;
+    if (location.length < 2)
+        return null;
+
+    var res = location.match(new RegExp("[?&]" + key + "=([^&/]*)", "i"));
+    if (res == null)
+        return null;
+
+    return res[1];
 }
