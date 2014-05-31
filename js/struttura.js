@@ -6,6 +6,7 @@ var trans2D, trans2Dinverse, canvas, ctx;
 var objModel = [];
 var objModelCount = 3;
 var lastTime = 0, lastAnimation = 0, lastRotation = 0;
+var intersectedObjects, targetList = [];
 
 var pointmass = 0.001;  //kg
 var springiness = 10;
@@ -19,10 +20,13 @@ animate();
 function init() {
     renderer = new THREE.WebGLRenderer();
     container3D = document.getElementById('3d');
+
     var width = container3D.offsetWidth;
     var height = window.innerHeight;
     renderer.setSize(width, height);
     container3D.appendChild(renderer.domElement);
+
+    container3D.addEventListener( 'mousemove', mousemove3D, false );
 
     camera = new THREE.PerspectiveCamera(10, width / height, 1, 1000);
     camera.position.y = 5;
@@ -90,9 +94,11 @@ function loadGeometry(geometries, lines, curves) {
         physics.points.push(geometry.points[k]);
     }   
 
+    var curveBox = new THREE.Box3();
     for (var i = 0; i < curves.length; i++) {
         var vertexIndices = curves[i].vertexIndices = [];
         for (var j = 0; j < curves[i].vertices.length; j++) {
+            curveBox.expandByPoint(curves[i].vertices[j]);
             for (var k = 0; k < geometry.vertices.length; k++) {
                 if ((new THREE.Vector3()).subVectors(curves[i].vertices[j], geometry.vertices[k]).length() < accuracy) {
                     vertexIndices[j] = k;
@@ -121,8 +127,10 @@ function loadGeometry(geometries, lines, curves) {
     createSprings(lines);
     createSprings(curves, 0, springiness * 10);
 
-    var xOffset = geometry.boundingBox.min.x;
-    var xDist = geometry.boundingBox.size().x + xOffset;
+    var box = geometry.boundingBox.clone().union(curveBox);
+
+    var xOffset = box.min.x;
+    var xDist = box.size().x + xOffset;
     var thetaOffset = Math.PI * (xOffset / xDist + 1 / 2); 
     var r = xDist / Math.PI / 2;
     var span = 2 * Math.PI;
@@ -155,145 +163,6 @@ function loadGeometry(geometries, lines, curves) {
     createScene();
 }
 
-function pointsAreEqual(a, b) {
-    return a.distanceToSquared(b) < accuracySquared;
-}
-
-function numbersAreEqual(a, b) {
-    return Math.abs(a, b) < accuracy ;
-}
-
-
-function create2D(box) {
-    canvas = document.getElementById('c');
-    ctx = canvas.getContext('2d');
-
-    var spoonflowerwidth = 8100;
-    var spoonflowerheight = 18100;
-    var scale = 1/10;
-
-    canvas.width = spoonflowerwidth * scale;
-    canvas.height = spoonflowerheight * scale;
-
-    var padding = 10;
-    var skewZfactor = -2;
-    var scaleX = (canvas.width - 2 * padding) / (box.size().x + 2 * box.min.x);
-    var scaleY = (canvas.height - 2 * padding) / (box.size().y);
-    var scale = Math.min(scaleX, scaleY);
-    var transX = padding / scale;
-    var transY = box.size().y + box.min.y + padding / scale + box.min.z * skewZfactor / 1.8;
-    var rotation = new THREE.Matrix4().makeRotationX(Math.PI);
-    var skewZ = new THREE.Matrix4();
-    skewZ.elements[9] = skewZfactor;
-
-    trans2D = new THREE.Matrix4()
-        .multiply(skewZ)
-        .multiplyScalar(scale)
-        .multiply(new THREE.Matrix4().makeTranslation(transX, transY, 0))
-        .multiply(rotation)
-        ;
-
-    trans2Dinverse = new THREE.Matrix4()
-        .multiply(new THREE.Matrix4().getInverse(rotation))
-        .multiplyScalar(1/scale)
-        .multiply(new THREE.Matrix4().getInverse(skewZ));
-
-    render2D();
-
-    canvas.onmousemove = function (e) {
-        render2D();
-
-        var rect = canvas.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
-
-        var canvasScale = canvas.width / rect.width;
-        x *= canvasScale;
-        y *= canvasScale;  // intionally same aspect ratio
-
-        var mouseVector = new THREE.Vector3(x, y, 0);
-    //    var flatVector = mouseVector.applyMatrix4(trans2Dinverse);
-    //    flatVector.applyMatrix4(new THREE.Matrix4().makeTranslation(transX, transY, 0))
-
-        var closest;
-        var closestDistance = Infinity;
-        for (var i = 0; i < flatGeometry.vertices.length; i++) {
-            var dist = flatGeometry.vertices[i].clone().applyMatrix4(trans2D).setZ(0).distanceTo(mouseVector);
-            if (dist < closestDistance) {
-                closest = i;
-                closestDistance = dist;
-            }
-        }
-
-        var p = flatGeometry.vertices[closest].clone().applyMatrix4(trans2D);
-        ctx.fillStyle = '#700';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 8, 0, 2 * Math.PI);
-        ctx.fill();
-
-     //   writeMessage (x + " " + y + " " + physics.points.length + " " + physics.constraints.length);
-
-        e.preventDefault();
-
-        function writeMessage(message) {
-            ctx.clearRect(0, 0, 100, 40);
-            ctx.font = '18pt Calibri';
-            ctx.fillStyle = 'gray';
-            ctx.fillText(message, 10, 25);
-        }
-
-        if (vertexMesh === undefined)
-            return;
-
-        vertexMesh.position = geometry.vertices[closest];
-    };
-};
-
-function createScene() {
-    material = [
-        new THREE.MeshPhongMaterial( { 
-            color: 0x000000, 
-            side: THREE.DoubleSide,
-            shading: THREE.FlatShading, 
-            specular: 0x999999,
-            emissive: 0x000000,
-            shininess: 10 
-        } ),
-        new THREE.MeshBasicMaterial( { 
-            color: 0xEEEEEE, 
-            shading: THREE.FlatShading, 
-            wireframe: true,
-            wireframeLinewidth: 2
-        } )
-    ];
-
-    scene = new THREE.Scene();
-    scene.add(THREE.SceneUtils.createMultiMaterialObject(geometry, material));
-
-    if (isMirror) {
-        var mirrorObj = THREE.SceneUtils.createMultiMaterialObject(geometry, material);
-        mirrorObj.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
-        scene.add(mirrorObj);
-    }
-
-    var ambientLight = new THREE.AmbientLight(0x666666);
-    scene.add(ambientLight);
-
-    scene.fog = new THREE.Fog(0x333333, 1500, 2100);
-
-    var directionalLight = new THREE.DirectionalLight(0x8888aa);
-    directionalLight.position.set(1, 1, 1).normalize();
-    scene.add(directionalLight);
-
-    var directionalLight = new THREE.DirectionalLight(0x8888aa);
-    directionalLight.position.set(-1, 1, 1).normalize();
-    scene.add(directionalLight);
-
-    vertexGeometry = new THREE.SphereGeometry(0.01, 16, 16);
-    vertexMesh = new THREE.Mesh(vertexGeometry, new THREE.MeshBasicMaterial({ color:0x770000}));
-    scene.add(vertexMesh);
-}
-
 function createSprings(lines, distance, springK) {
     springK = springK || springiness;
     var springKFirst = springK * 1E-3;
@@ -312,7 +181,7 @@ function createSprings(lines, distance, springK) {
             if (k == geometry.vertices.length) {
                 geometry.vertices.push(lines[i].vertices[j].clone());
                 geometry.points.push(new Point(geometry.vertices[k], pointmass));
-                geometry.points[k].multiplier = new THREE.Vector3(0, 0, 0);
+                geometry.points[k].multiplier = new THREE.Vector3(0, 1, 1);
                 physics.points.push(geometry.points[k]);
 
                 vertexIndices[j] = k;
@@ -397,6 +266,166 @@ function createSprings(lines, distance, springK) {
     }
 }
 
+function mousemove3D (e) {
+    render2D();
+
+    var rect = canvas.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var y = e.clientY - rect.top;
+
+    var vector = new THREE.Vector3( x, y, 1 );
+    var projector = new THREE.Projector();
+    projector.unprojectVector( vector, camera );
+    var ray = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+    var intersects = ray.intersectObjects( targetList );
+
+    if (intersects.length == 0)
+        return;
+
+    // TBD
+};
+
+function pointsAreEqual(a, b) {
+    return a.distanceToSquared(b) < accuracySquared;
+}
+
+function numbersAreEqual(a, b) {
+    return Math.abs(a, b) < accuracy ;
+}
+
+
+function create2D(box) {
+    canvas = document.getElementById('c');
+    ctx = canvas.getContext('2d');
+
+    var spoonflowerwidth = 8100;
+    var spoonflowerheight = 18100;
+    var scale = 1/10;
+
+    canvas.width = spoonflowerwidth * scale;
+    canvas.height = spoonflowerheight * scale;
+
+    var padding = 10;
+    var skewZfactor = -2;
+    var scaleX = (canvas.width - 2 * padding) / (box.size().x + 2 * box.min.x);
+    var scaleY = (canvas.height - 2 * padding) / (box.size().y);
+    var scale = Math.min(scaleX, scaleY);
+    var transX = padding / scale;
+    var transY = box.size().y + box.min.y + padding / scale + box.min.z * skewZfactor / 1.8;
+    var rotation = new THREE.Matrix4().makeRotationX(Math.PI);
+    var skewZ = new THREE.Matrix4();
+    skewZ.elements[9] = skewZfactor;
+
+    trans2D = new THREE.Matrix4()
+        .multiply(skewZ)
+        .multiplyScalar(scale)
+        .multiply(new THREE.Matrix4().makeTranslation(transX, transY, 0))
+        .multiply(rotation)
+        ;
+
+    trans2Dinverse = new THREE.Matrix4()
+        .multiply(new THREE.Matrix4().getInverse(rotation))
+        .multiplyScalar(1/scale)
+        .multiply(new THREE.Matrix4().getInverse(skewZ));
+
+    render2D();
+};
+
+function createScene() {
+    material = [
+        new THREE.MeshPhongMaterial( { 
+            color: 0x000000, 
+            side: THREE.DoubleSide,
+            shading: THREE.FlatShading, 
+            specular: 0x999999,
+            emissive: 0x000000,
+            shininess: 10 
+        } ),
+        new THREE.MeshBasicMaterial( { 
+            color: 0xEEEEEE, 
+            shading: THREE.FlatShading, 
+            wireframe: true,
+            wireframeLinewidth: 2
+        } )
+    ];
+
+    scene = new THREE.Scene();
+    scene.add(THREE.SceneUtils.createMultiMaterialObject(geometry, material));
+    targetList.push(new THREE.Mesh(geometry));
+
+    if (isMirror) {
+        var mirrorObj = THREE.SceneUtils.createMultiMaterialObject(geometry, material);
+        mirrorObj.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
+        scene.add(mirrorObj);
+    }
+
+    var ambientLight = new THREE.AmbientLight(0x666666);
+    scene.add(ambientLight);
+
+    scene.fog = new THREE.Fog(0x333333, 1500, 2100);
+
+    var directionalLight = new THREE.DirectionalLight(0x8888aa);
+    directionalLight.position.set(1, 1, 1).normalize();
+    scene.add(directionalLight);
+
+    var directionalLight = new THREE.DirectionalLight(0x8888aa);
+    directionalLight.position.set(-1, 1, 1).normalize();
+    scene.add(directionalLight);
+
+    vertexGeometry = new THREE.SphereGeometry(0.01, 16, 16);
+    vertexMesh = new THREE.Mesh(vertexGeometry, new THREE.MeshBasicMaterial({ color:0x770000}));
+    scene.add(vertexMesh);
+}
+
+function mousemove2D (e) {
+    render2D();
+
+    var rect = canvas.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var y = e.clientY - rect.top;
+
+    var canvasScale = canvas.width / rect.width;
+    x *= canvasScale;
+    y *= canvasScale;  // intionally same aspect ratio
+
+    var mouseVector = new THREE.Vector3(x, y, 0);
+//    var flatVector = mouseVector.applyMatrix4(trans2Dinverse);
+//    flatVector.applyMatrix4(new THREE.Matrix4().makeTranslation(transX, transY, 0))
+
+    var closest;
+    var closestDistance = Infinity;
+    for (var i = 0; i < flatGeometry.vertices.length; i++) {
+        var dist = flatGeometry.vertices[i].clone().applyMatrix4(trans2D).setZ(0).distanceTo(mouseVector);
+        if (dist < closestDistance) {
+            closest = i;
+            closestDistance = dist;
+        }
+    }
+
+    var p = flatGeometry.vertices[closest].clone().applyMatrix4(trans2D);
+    ctx.fillStyle = '#700';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 8, 0, 2 * Math.PI);
+    ctx.fill();
+
+ //   writeMessage (x + " " + y + " " + physics.points.length + " " + physics.constraints.length);
+
+    e.preventDefault();
+
+    function writeMessage(message) {
+        ctx.clearRect(0, 0, 100, 40);
+        ctx.font = '18pt Calibri';
+        ctx.fillStyle = 'gray';
+        ctx.fillText(message, 10, 25);
+    }
+
+    if (vertexMesh === undefined)
+        return;
+
+    vertexMesh.position = geometry.vertices[closest];
+};
+
 function onWindowResize() {
     var width = container3D.offsetWidth;
     var height = window.innerHeight;
@@ -405,6 +434,7 @@ function onWindowResize() {
 
     renderer.setSize(width, height);
 }
+
 
 function animate() {
     requestAnimationFrame(animate, renderer.domElement);
