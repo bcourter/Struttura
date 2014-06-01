@@ -203,6 +203,13 @@ function createSprings(lines, distance, springK) {
         var a = geometry.points[lines[i].vertexIndices[0]];
         var b = geometry.points[lines[i].vertexIndices[lines[i].vertexIndices.length - 1]];
 
+        if (lines[i].colors[0] == 0xFF0000) {
+            var noZ =  new THREE.Vector3(1, 0, 1);
+            a.multiplier = noZ;
+            b.multiplier = noZ;
+            continue;
+        }
+
         var spring = new Spring(a, b, springK);
 
         if (distance == 0)

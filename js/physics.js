@@ -6,7 +6,7 @@ var Physics = function () {
     this.constraints = []; 
 
     this.time = 0;
- //  this.gravity = new THREE.Vector3(0, 0, -9.8);
+//   this.gravity = new THREE.Vector3(0, -1E-1, 0);
     this.gravity = new THREE.Vector3(0, 0, 0);
     this.dampening = 0.9;
     this.anisotropy = new THREE.Vector3(1, 0.9, 1).multiplyScalar(0.5);

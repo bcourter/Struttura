@@ -11064,6 +11064,7 @@ THREE.JSONLoader.prototype.parse = function ( json, texturePath ) {
 			vertex.z = vertices[ offset ++ ] * scale;
 
 			geometry.vertices.push( vertex );
+			geometry.colors.push( colors[0] );
 
 		}
 
