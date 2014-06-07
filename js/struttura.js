@@ -1,12 +1,14 @@
-var renderer, camera, settings, container3D, panels, scene
-var material, geometry, physics, flatGeometry;
+var scene3D, scene2D, controls;
+var material, physics;
+var trans2D, trans2Dinverse;
+
 var mesh, lines, curves, isMirror;
 var vertexGeometry, vertexMesh;
-var trans2D, trans2Dinverse, canvas, ctx;
+
 var objModel = [];
 var objModelCount = 3;
 var lastTime = 0, lastAnimation = 0, lastRotation = 0;
-var intersectedObjects, targetList = [];
+var intersectedObjects = [];
 
 var pointmass = 0.001;  //kg
 var springiness = 10;
@@ -14,49 +16,15 @@ var springiness = 10;
 var accuracy = 1E-3;
 var accuracySquared = accuracy * accuracy;
 
+var spoonflowerwidth = 8100;
+var spoonflowerheight = 18100;
+
 init();
 animate();
 
 function init() {
-    renderer = new THREE.WebGLRenderer();
-    container3D = document.getElementById('3d');
-
-    var width = container3D.offsetWidth;
-    var height = window.innerHeight;
-    renderer.setSize(width, height);
-    container3D.appendChild(renderer.domElement);
-
-    container3D.addEventListener( 'mousemove', mousemove3D, false );
-
-    camera = new THREE.PerspectiveCamera(10, width / height, 1, 1000);
-    camera.position.y = 5;
-    camera.position.z = 10;
-
-    var cookie = getCookie("view");
-    if (cookie !== undefined   ) {
-        var viewdata = cookie.split(',');
-
-        for (var i = 0; i < 16; i++)
-            camera.projectionMatrix[i] = viewdata[i];
-
-
-    }
-
-	controls = new THREE.OrbitControls(camera, container3D);
-
-	controls.rotateSpeed = 2.0;
-	controls.zoomSpeed = 2.0;
-	controls.panSpeed = 0.2;
-
-	controls.noZoom = false;
-	controls.noPan = false;
-
-	controls.staticMoving = true;
-	controls.dynamicDampingFactor = 0.3;
-
-	controls.keys = [ 65, 83, 68 ];
-
-	controls.addEventListener( 'change', render3D );
+    init3D();
+    init2D();
 
     window.addEventListener('resize', onWindowResize, false);
 
@@ -72,8 +40,135 @@ function init() {
         isMirror = true;
 
     loadpart(patternFile, function (geometries, lines, curves) { loadGeometry(geometries, lines, curves); });
+}
+
+function init3D () {
+    var material = [
+        new THREE.MeshPhongMaterial( { 
+            color: 0x000000, 
+            side: THREE.DoubleSide,
+            shading: THREE.FlatShading, 
+            specular: 0x999999,
+            emissive: 0x000000,
+            shininess: 10 
+        } ),
+        new THREE.MeshBasicMaterial( { 
+            color: 0xEEEEEE, 
+            shading: THREE.FlatShading, 
+            wireframe: true,
+            wireframeLinewidth: 2
+        } )
+    ];
+
+    scene3D = new ClothScene(
+        document.getElementById('3d'),
+        material, 
+        mousemove3D);
+
+    scene3D.camera.position.y = 5;
+    scene3D.camera.position.z = 10;
+
+    var cookie = getCookie("view");
+    if (cookie !== undefined   ) {
+        var viewdata = cookie.split(',');
+
+        for (var i = 0; i < 16; i++)
+            scene3D.camera.projectionMatrix[i] = viewdata[i];
+    }
+
+    controls = new THREE.OrbitControls(scene3D.camera, scene3D.container);
+
+    controls.rotateSpeed = 2.0;
+    controls.zoomSpeed = 2.0;
+    controls.panSpeed = 0.2;
+
+    controls.noZoom = false;
+    controls.noPan = false;
+
+    controls.staticMoving = true;
+    controls.dynamicDampingFactor = 0.3;
+
+    controls.keys = [ 65, 83, 68 ];
+
+    controls.addEventListener( 'change', scene3D.render );
+
 
 }
+
+function init2D () {
+    var material = [
+        new THREE.MeshBasicMaterial( { 
+            color: 0xEEEEEE, 
+            shading: THREE.FlatShading, 
+            wireframe: true,
+            wireframeLinewidth: 2
+        } )
+    ];
+
+    scene2D = new ClothScene(
+        document.getElementById('2d'),
+        material, 
+        mousemove2D);
+
+}
+
+function mousemove3D (e) {
+    scene2D.render();
+
+    // var x = e.clientX - rect.left;
+    // var y = e.clientY - rect.top;
+
+    // var vector = new THREE.Vector3( x, y, 1 );
+    // var projector = new THREE.Projector();
+    // projector.unprojectVector( vector, camera );
+    // var ray = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+    // var intersects = ray.intersectObjects( scene3D.targetList );
+
+    // if (intersects.length == 0)
+    //     return;
+
+    // TBD
+};
+
+function mousemove2D (e) {
+    scene2D.render();
+
+//     var rect = canvas.getBoundingClientRect();
+//     var x = e.clientX - rect.left;
+//     var y = e.clientY - rect.top;
+
+//     var canvasScale = canvas.width / rect.width;
+//     x *= canvasScale;
+//     y *= canvasScale;  // intionally same aspect ratio
+
+//     var mouseVector = new THREE.Vector3(x, y, 0);
+// //    var flatVector = mouseVector.applyMatrix4(trans2Dinverse);
+// //    flatVector.applyMatrix4(new THREE.Matrix4().makeTranslation(transX, transY, 0))
+
+//     var closest;
+//     var closestDistance = Infinity;
+//     for (var i = 0; i < scene2D.geometry.vertices.length; i++) {
+//         var dist = scene2D.geometry.vertices[i].clone().applyMatrix4(trans2D).setZ(0).distanceTo(mouseVector);
+//         if (dist < closestDistance) {
+//             closest = i;
+//             closestDistance = dist;
+//         }
+//     }
+
+//     var p = scene2D.geometry.vertices[closest].clone().applyMatrix4(trans2D);
+//     ctx.fillStyle = '#700';
+//     ctx.beginPath();
+//     ctx.arc(p.x, p.y, 8, 0, 2 * Math.PI);
+//     ctx.fill();
+
+//     e.preventDefault();
+
+//     if (vertexMesh === undefined)
+//         return;
+
+//     vertexMesh.position = geometry.vertices[closest];
+};
 
 function loadGeometry(geometries, lines, curves) {
     var g = geometries.shift();
@@ -84,7 +179,7 @@ function loadGeometry(geometries, lines, curves) {
     this.curves = curves;
 
     g.mergeVertices();
-    geometry = g;
+    var geometry = g;
     geometry.points = [];
 
     physics = new Physics();
@@ -121,11 +216,10 @@ function loadGeometry(geometries, lines, curves) {
     }
 
     geometry.computeBoundingBox();
-    create2D(geometry.boundingBox);
-    flatGeometry = geometry.clone();
+    scene2D.create(geometry.clone());
 
-    createSprings(lines);
-    createSprings(curves, 0, springiness * 10);
+    createSprings(geometry, lines);
+    createSprings(geometry, curves, 0, springiness * 10);
 
     var box = geometry.boundingBox.clone().union(curveBox);
 
@@ -160,10 +254,10 @@ function loadGeometry(geometries, lines, curves) {
 
     }
 
-    createScene();
+    scene3D.create(geometry);
 }
 
-function createSprings(lines, distance, springK) {
+function createSprings(geometry, lines, distance, springK) {
     springK = springK || springiness;
     var springKFirst = springK * 1E-3;
     var springKSecond = springKFirst * 1E-1;
@@ -273,26 +367,6 @@ function createSprings(lines, distance, springK) {
     }
 }
 
-function mousemove3D (e) {
-    render2D();
-
-    var rect = canvas.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    var y = e.clientY - rect.top;
-
-    var vector = new THREE.Vector3( x, y, 1 );
-    var projector = new THREE.Projector();
-    projector.unprojectVector( vector, camera );
-    var ray = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
-
-    var intersects = ray.intersectObjects( targetList );
-
-    if (intersects.length == 0)
-        return;
-
-    // TBD
-};
-
 function pointsAreEqual(a, b) {
     return a.distanceToSquared(b) < accuracySquared;
 }
@@ -302,179 +376,72 @@ function numbersAreEqual(a, b) {
 }
 
 
+
+
 function create2D(box) {
-    canvas = document.getElementById('c');
-    ctx = canvas.getContext('2d');
 
-    var spoonflowerwidth = 8100;
-    var spoonflowerheight = 18100;
-    var scale = 1/10;
 
-    canvas.width = spoonflowerwidth * scale;
-    canvas.height = spoonflowerheight * scale;
+//     var scale = 1/10;
 
-    var padding = 10;
-    var skewZfactor = -2;
-    var scaleX = (canvas.width - 2 * padding) / (box.size().x + 2 * box.min.x);
-    var scaleY = (canvas.height - 2 * padding) / (box.size().y);
-    var scale = Math.min(scaleX, scaleY);
-    var transX = padding / scale;
-    var transY = box.size().y + box.min.y + padding / scale + box.min.z * skewZfactor / 1.8;
-    var rotation = new THREE.Matrix4().makeRotationX(Math.PI);
-    var skewZ = new THREE.Matrix4();
-    skewZ.elements[9] = skewZfactor;
+//     canvas.width = spoonflowerwidth * scale;
+//     canvas.height = spoonflowerheight * scale;
 
-    trans2D = new THREE.Matrix4()
-        .multiply(skewZ)
-        .multiplyScalar(scale)
-        .multiply(new THREE.Matrix4().makeTranslation(transX, transY, 0))
-        .multiply(rotation)
-        ;
+//     var padding = 10;
+//     var skewZfactor = -2;
+//     var scaleX = (canvas.width - 2 * padding) / (box.size().x + 2 * box.min.x);
+//     var scaleY = (canvas.height - 2 * padding) / (box.size().y);
+//     var scale = Math.min(scaleX, scaleY);
+//     var transX = padding / scale;
+//     var transY = box.size().y + box.min.y + padding / scale + box.min.z * skewZfactor / 1.8;
+//     var rotation = new THREE.Matrix4().makeRotationX(Math.PI);
+//     var skewZ = new THREE.Matrix4();
+//     skewZ.elements[9] = skewZfactor;
 
-    trans2Dinverse = new THREE.Matrix4()
-        .multiply(new THREE.Matrix4().getInverse(rotation))
-        .multiplyScalar(1/scale)
-        .multiply(new THREE.Matrix4().getInverse(skewZ));
+//     trans2D = new THREE.Matrix4()
+//         .multiply(skewZ)
+//         .multiplyScalar(scale)
+//         .multiply(new THREE.Matrix4().makeTranslation(transX, transY, 0))
+//         .multiply(rotation)
+//         ;
 
-    render2D();
+//     trans2Dinverse = new THREE.Matrix4()
+//         .multiply(new THREE.Matrix4().getInverse(rotation))
+//         .multiplyScalar(1/scale)
+//         .multiply(new THREE.Matrix4().getInverse(skewZ));
+
 };
 
-function createScene() {
-    material = [
-        new THREE.MeshPhongMaterial( { 
-            color: 0x000000, 
-            side: THREE.DoubleSide,
-            shading: THREE.FlatShading, 
-            specular: 0x999999,
-            emissive: 0x000000,
-            shininess: 10 
-        } ),
-        new THREE.MeshBasicMaterial( { 
-            color: 0xEEEEEE, 
-            shading: THREE.FlatShading, 
-            wireframe: true,
-            wireframeLinewidth: 2
-        } )
-    ];
-
-    scene = new THREE.Scene();
-    scene.add(THREE.SceneUtils.createMultiMaterialObject(geometry, material));
-    targetList.push(new THREE.Mesh(geometry));
-
-    if (isMirror) {
-        var mirrorObj = THREE.SceneUtils.createMultiMaterialObject(geometry, material);
-        mirrorObj.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
-        scene.add(mirrorObj);
-    }
-
-    var ambientLight = new THREE.AmbientLight(0x666666);
-    scene.add(ambientLight);
-
-    scene.fog = new THREE.Fog(0x333333, 1500, 2100);
-
-    var directionalLight = new THREE.DirectionalLight(0x8888aa);
-    directionalLight.position.set(1, 1, 1).normalize();
-    scene.add(directionalLight);
-
-    var directionalLight = new THREE.DirectionalLight(0x8888aa);
-    directionalLight.position.set(-1, 1, 1).normalize();
-    scene.add(directionalLight);
-
-    vertexGeometry = new THREE.SphereGeometry(0.01, 16, 16);
-    vertexMesh = new THREE.Mesh(vertexGeometry, new THREE.MeshBasicMaterial({ color:0x770000}));
-    scene.add(vertexMesh);
-}
-
-function mousemove2D (e) {
-    render2D();
-
-    var rect = canvas.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    var y = e.clientY - rect.top;
-
-    var canvasScale = canvas.width / rect.width;
-    x *= canvasScale;
-    y *= canvasScale;  // intionally same aspect ratio
-
-    var mouseVector = new THREE.Vector3(x, y, 0);
-//    var flatVector = mouseVector.applyMatrix4(trans2Dinverse);
-//    flatVector.applyMatrix4(new THREE.Matrix4().makeTranslation(transX, transY, 0))
-
-    var closest;
-    var closestDistance = Infinity;
-    for (var i = 0; i < flatGeometry.vertices.length; i++) {
-        var dist = flatGeometry.vertices[i].clone().applyMatrix4(trans2D).setZ(0).distanceTo(mouseVector);
-        if (dist < closestDistance) {
-            closest = i;
-            closestDistance = dist;
-        }
-    }
-
-    var p = flatGeometry.vertices[closest].clone().applyMatrix4(trans2D);
-    ctx.fillStyle = '#700';
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 8, 0, 2 * Math.PI);
-    ctx.fill();
-
- //   writeMessage (x + " " + y + " " + physics.points.length + " " + physics.constraints.length);
-
-    e.preventDefault();
-
-    function writeMessage(message) {
-        ctx.clearRect(0, 0, 100, 40);
-        ctx.font = '18pt Calibri';
-        ctx.fillStyle = 'gray';
-        ctx.fillText(message, 10, 25);
-    }
-
-    if (vertexMesh === undefined)
-        return;
-
-    vertexMesh.position = geometry.vertices[closest];
-};
 
 function onWindowResize() {
-    var width = container3D.offsetWidth;
-    var height = window.innerHeight;
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-
-    renderer.setSize(width, height);
+    scene2D.onWindowResize();
+    scene3D.onWindowResize();
 }
 
 
 function animate() {
-    requestAnimationFrame(animate, renderer.domElement);
+    requestAnimationFrame(animate, scene3D.renderer.domElement);
 
-    render3D();
-  //  render2D();
+    render();
     controls.update();
     //stats.update();
 }
 
 var frame = 0;
-//var geom = THREE.CubeGeometry(2, 2, 2);
-function render3D() {
+function render() {
     frame++;
     var time = new Date().getTime() / 1000;
 
-    if (geometry === undefined) {
-        animGeometry = geometry;
+    if (this.physics === undefined) 
         return;
-    }
 
-    geometry.computeFaceNormals();
-    geometry.computeVertexNormals();
-    geometry.normalsNeedUpdate = true;
-    geometry.verticesNeedUpdate = true;
-
-    renderer.render(scene, camera);
+    scene3D.render();
+    scene2D.render();
 
     if (frame % 100 == 0) {
         var viewdata = [16];
 
         for (var i = 0; i < 16; i++)
-            viewdata[i] = camera.projectionMatrix[i];
+            viewdata[i] = scene3D.camera.projectionMatrix[i];
 
         setCookie("view", viewdata.join()); 
     }
@@ -485,39 +452,39 @@ function render3D() {
     lastTime = time;
 }
 
-function render2D() {
-    if (ctx === undefined)
-        return;
+// function render2D() {
+//     if (ctx === undefined)
+//         return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = '#aaa';
+//     ctx.clearRect(0, 0, canvas.width, canvas.height);
+//     ctx.strokeStyle = '#aaa';
 
-    ctx.beginPath();
-    for (var i = 0; i < lines.length; i++) {
-        var p = lines[i].vertices[0].clone().applyMatrix4(trans2D);
+//     ctx.beginPath();
+//     for (var i = 0; i < lines.length; i++) {
+//         var p = lines[i].vertices[0].clone().applyMatrix4(trans2D);
 
-        ctx.moveTo(p.x , p.y);
-        for (var j = 1; j < lines[i].vertices.length; j++) {
-            p = lines[i].vertices[j].clone().applyMatrix4(trans2D);
-            ctx.lineTo(p.x , p.y);
-        }
-    }
-    ctx.stroke();
+//         ctx.moveTo(p.x , p.y);
+//         for (var j = 1; j < lines[i].vertices.length; j++) {
+//             p = lines[i].vertices[j].clone().applyMatrix4(trans2D);
+//             ctx.lineTo(p.x , p.y);
+//         }
+//     }
+//     ctx.stroke();
 
-    ctx.strokeStyle = '#00b';
+//     ctx.strokeStyle = '#00b';
 
-    ctx.beginPath();
-    for (var i = 0; i < curves.length; i++) {
-        var p = curves[i].vertices[0].clone().applyMatrix4(trans2D);
+//     ctx.beginPath();
+//     for (var i = 0; i < curves.length; i++) {
+//         var p = curves[i].vertices[0].clone().applyMatrix4(trans2D);
 
-        ctx.moveTo(p.x , p.y);
-        for (var j = 1; j < curves[i].vertices.length; j++) {
-            p = curves[i].vertices[j].clone().applyMatrix4(trans2D);
-            ctx.lineTo(p.x , p.y);
-        }
-    }
-    ctx.stroke();
-}
+//         ctx.moveTo(p.x , p.y);
+//         for (var j = 1; j < curves[i].vertices.length; j++) {
+//             p = curves[i].vertices[j].clone().applyMatrix4(trans2D);
+//             ctx.lineTo(p.x , p.y);
+//         }
+//     }
+//     ctx.stroke();
+// }
 
 
 function saveObj() {
