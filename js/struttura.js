@@ -419,7 +419,7 @@ function onWindowResize() {
 
 
 function animate() {
-    requestAnimationFrame(animate, scene3D.renderer.domElement);
+    requestAnimationFrame(animate);
 
     render();
     controls.update();

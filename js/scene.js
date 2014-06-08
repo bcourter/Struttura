@@ -17,8 +17,8 @@ var ClothScene = function (container, material, mousemove) {
 
    	this.scene = new THREE.Scene();
 
-   	this.vertexGeometry = new THREE.SphereGeometry(0.01, 16, 16);
-    this.vertexMesh = new THREE.Mesh(vertexGeometry, new THREE.MeshBasicMaterial({ color:0x770000}));
+   	this.vertexGeometry = new THREE.SphereGeometry(0.51, 16, 16);
+    this.vertexMesh = new THREE.Mesh(this.vertexGeometry, new THREE.MeshBasicMaterial({ color:0x770000}));
     this.targetList = [];
 };
 
@@ -48,8 +48,7 @@ ClothScene.prototype.create = function (geometry) {
     directionalLight.position.set(-1, 1, 1).normalize();
     scene.add(directionalLight);
 
-
-    scene.add(vertexMesh);
+    scene.add(this.vertexMesh);
 }
 
 ClothScene.prototype.render = function() {
