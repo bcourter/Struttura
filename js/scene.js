@@ -40,13 +40,13 @@ ClothScene.prototype.create = function (geometry) {
 
     scene.fog = new THREE.Fog(0x333333, 1500, 2100);
 
-    var directionalLight = new THREE.DirectionalLight(0x8888aa);
-    directionalLight.position.set(1, 1, 1).normalize();
-    scene.add(directionalLight);
+    // var directionalLight = new THREE.DirectionalLight(0x8888aa);
+    // directionalLight.position.set(1, 1, 1).normalize();
+    // scene.add(directionalLight);
 
-    var directionalLight = new THREE.DirectionalLight(0x8888aa);
-    directionalLight.position.set(-1, 1, 1).normalize();
-    scene.add(directionalLight);
+    // var directionalLight = new THREE.DirectionalLight(0x8888aa);
+    // directionalLight.position.set(-1, 1, 1).normalize();
+    // scene.add(directionalLight);
 
     scene.add(this.vertexMesh);
 }

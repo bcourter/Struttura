@@ -68,14 +68,6 @@ function init3D () {
     scene3D.camera.position.y = 5;
     scene3D.camera.position.z = 10;
 
-    var cookie = getCookie("view");
-    if (cookie !== undefined   ) {
-        var viewdata = cookie.split(',');
-
-        for (var i = 0; i < 16; i++)
-            scene3D.camera.projectionMatrix[i] = viewdata[i];
-    }
-
     controls = new THREE.OrbitControls(scene3D.camera, scene3D.container);
 
     controls.rotateSpeed = 2.0;
@@ -113,7 +105,7 @@ function init2D () {
 }
 
 function mousemove3D (e) {
-    scene2D.render();
+ //   scene2D.render();
 
     // var x = e.clientX - rect.left;
     // var y = e.clientY - rect.top;
@@ -132,7 +124,7 @@ function mousemove3D (e) {
 };
 
 function mousemove2D (e) {
-    scene2D.render();
+ //   scene2D.render();
 
 //     var rect = canvas.getBoundingClientRect();
 //     var x = e.clientX - rect.left;
@@ -419,7 +411,7 @@ function onWindowResize() {
 
 
 function animate() {
-    requestAnimationFrame(animate);
+    requestAnimationFrame(animate, window);
 
     render();
     controls.update();
@@ -436,15 +428,6 @@ function render() {
 
     scene3D.render();
     scene2D.render();
-
-    if (frame % 100 == 0) {
-        var viewdata = [16];
-
-        for (var i = 0; i < 16; i++)
-            viewdata[i] = scene3D.camera.projectionMatrix[i];
-
-        setCookie("view", viewdata.join()); 
-    }
 
     physics.update(0.006);
 
