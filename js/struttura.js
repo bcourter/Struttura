@@ -35,11 +35,9 @@ function init() {
     camera = new THREE.PerspectiveCamera(10, aspectRatio, 1, 1000);
     camera.position.y = 5;
     camera.position.z = 10;
-    camera.right = camera.right + 100;;
 
     flatCamera = new THREE.OrthographicCamera(-aspectRatio, aspectRatio, 1, -1, 1, 10);
-    flatCamera.position.z = 3;
-    flatCamera.far = 10;
+    flatCamera.position.z = 1;
 
     var cookie = getCookie("view");
     if (cookie !== undefined   ) {
@@ -402,11 +400,15 @@ function createScene() {
 
     scene = new THREE.Scene();
     mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, multiMaterial);
-   
+
+    var offset = geometry.boundingBox.center().y;
+    mesh.position.y -= offset;   
     scene.add(mesh);
+
     if (isMirror) {
         var mirrorObj = mesh.clone();
         mirrorObj.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
+        mirrorObj.position.y -= offset;
         scene.add(mirrorObj);
     }
 
@@ -432,6 +434,7 @@ function createScene() {
 
     flatMesh = new THREE.Mesh(flatGeometry, shaderMaterial2D);
     flatMesh.position.x = 0.6;
+    flatMesh.position.y = -offset;
     flatScene.add(flatMesh);
     flatCamera.lookAt(flatScene.position);
 }
