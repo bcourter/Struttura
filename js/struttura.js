@@ -384,7 +384,7 @@ function createScene() {
     var multiMaterial = [
         shaderMaterial3D,
         new THREE.MeshBasicMaterial( { 
-            color: 0xEEEEEE, 
+            color: 0xEEEEEE,
             shading: THREE.FlatShading, 
             wireframe: true,
             wireframeLinewidth: 2
@@ -509,7 +509,7 @@ function render3D() {
     // TODO: make this work
     flatMesh.material.attributes.position3d.value = geometry.vertices;
     flatMesh.material.attributes.position3d.needsUpdate = true;
-    
+
     renderer.render(scene, camera);
 
     if (frame % 100 == 0) {
