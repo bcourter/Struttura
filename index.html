@@ -23,6 +23,32 @@
 
         <canvas id="c" class="col s1of2"></canvas>
     </div>
+
+        <script id="vertexShader" type="x-shader/x-vertex">
+
+            varying vec3 vVertexPosition;
+
+            void main()
+            {
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                gl_Position = projectionMatrix * mvPosition;
+                vVertexPosition = position;
+            }
+
+        </script>
+
+        <script id="fragmentShader" type="x-shader/x-fragment">
+
+            uniform float time;
+ 
+            varying vec3 vVertexPosition;
+
+            void main( void ) {
+                
+                gl_FragColor = vec4(1.0, vVertexPosition.y / 0.5, 0.0, 1.0);
+            }
+
+        </script>
    
     <script type="text/javascript" src="js/physics.js"></script>
 

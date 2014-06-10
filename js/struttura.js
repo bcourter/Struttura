@@ -340,15 +340,31 @@ function create2D(box) {
 };
 
 function createScene() {
-    material = [
-        new THREE.MeshPhongMaterial( { 
+
+    var uniforms = {
+                    time: { type: "f", value: 1.0 },
+                };
+
+    var shaderMaterial = new THREE.ShaderMaterial( {
+
+        uniforms: uniforms,
+        vertexShader: document.getElementById( 'vertexShader' ).textContent,
+        fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+        side: THREE.DoubleSide
+
+    } );
+
+    var phongMaterial = new THREE.MeshPhongMaterial( { 
             color: 0x000000, 
             side: THREE.DoubleSide,
             shading: THREE.FlatShading, 
             specular: 0x999999,
             emissive: 0x000000,
             shininess: 10 
-        } ),
+        } );
+
+    var multiMaterial = [
+        shaderMaterial,
         new THREE.MeshBasicMaterial( { 
             color: 0xEEEEEE, 
             shading: THREE.FlatShading, 
@@ -358,11 +374,11 @@ function createScene() {
     ];
 
     scene = new THREE.Scene();
-    scene.add(THREE.SceneUtils.createMultiMaterialObject(geometry, material));
-    targetList.push(new THREE.Mesh(geometry));
-
+    var mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, multiMaterial);
+   
+    scene.add(mesh);
     if (isMirror) {
-        var mirrorObj = THREE.SceneUtils.createMultiMaterialObject(geometry, material);
+        var mirrorObj = mesh.clone();
         mirrorObj.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
         scene.add(mirrorObj);
     }
