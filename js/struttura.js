@@ -14,13 +14,14 @@ var springiness = 10;
 var accuracy = 1E-3;
 var accuracySquared = accuracy * accuracy;
 
-var flatMesh;
+var flatScene, flatMesh, flatCamera;
 
 init();
 animate();
 
 function init() {
     renderer = new THREE.WebGLRenderer();
+    renderer.autoClear = false;
     container3D = document.getElementById('3d');
 
     var width = container3D.offsetWidth;
@@ -30,9 +31,15 @@ function init() {
 
     container3D.addEventListener( 'mousemove', mousemove3D, false );
 
-    camera = new THREE.PerspectiveCamera(10, width / height, 1, 1000);
+    var aspectRatio = width / height;
+    camera = new THREE.PerspectiveCamera(10, aspectRatio, 1, 1000);
     camera.position.y = 5;
     camera.position.z = 10;
+    camera.right = camera.right + 100;;
+
+    flatCamera = new THREE.OrthographicCamera(-aspectRatio, aspectRatio, 1, -1, 1, 10);
+    flatCamera.position.z = 3;
+    flatCamera.far = 10;
 
     var cookie = getCookie("view");
     if (cookie !== undefined   ) {
@@ -417,10 +424,14 @@ function createScene() {
     vertexGeometry = new THREE.SphereGeometry(0.01, 16, 16);
     vertexMesh = new THREE.Mesh(vertexGeometry, new THREE.MeshBasicMaterial({ color:0x770000}));
     scene.add(vertexMesh);
+    
+    flatScene = new THREE.Scene();
+    flatScene.add(directionalLight);
 
     flatMesh = new THREE.Mesh(flatGeometry, shaderMaterial2D);
-    flatMesh.applyMatrix(new THREE.Matrix4().makeTranslation(1, 0, 0));
-    scene.add(flatMesh);
+    flatMesh.position.x = 0.75;
+    flatScene.add(flatMesh);
+    flatCamera.lookAt(flatScene.position);
 }
 
 function mousemove2D (e) {
@@ -477,6 +488,9 @@ function onWindowResize() {
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
 
+    flatCamera.aspect = width / height;
+    flatCamera.updateProjectionMatrix();
+
     renderer.setSize(width, height);
 }
 
@@ -506,11 +520,13 @@ function render3D() {
     geometry.normalsNeedUpdate = true;
     geometry.verticesNeedUpdate = true;
 
-    // TODO: make this work
     flatMesh.material.attributes.position3d.value = geometry.vertices;
     flatMesh.material.attributes.position3d.needsUpdate = true;
 
+    renderer.clear();
     renderer.render(scene, camera);
+    renderer.clearDepth();
+    renderer.render(flatScene, flatCamera);
 
     if (frame % 100 == 0) {
         var viewdata = [16];
