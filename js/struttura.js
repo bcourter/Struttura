@@ -393,6 +393,8 @@ function createScene() {
         new THREE.MeshBasicMaterial( { 
             color: 0xEEEEEE,
             shading: THREE.FlatShading, 
+            opacity: 0.2,
+            transparent: true,
             wireframe: true,
             wireframeLinewidth: 2
         } )
@@ -429,7 +431,7 @@ function createScene() {
     flatScene.add(directionalLight);
 
     flatMesh = new THREE.Mesh(flatGeometry, shaderMaterial2D);
-    flatMesh.position.x = 0.75;
+    flatMesh.position.x = 0.6;
     flatScene.add(flatMesh);
     flatCamera.lookAt(flatScene.position);
 }
