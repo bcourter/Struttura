@@ -14,6 +14,8 @@ var springiness = 10;
 var accuracy = 1E-3;
 var accuracySquared = accuracy * accuracy;
 
+var flatMesh;
+
 init();
 animate();
 
@@ -121,7 +123,7 @@ function loadGeometry(geometries, lines, curves) {
     }
 
     geometry.computeBoundingBox();
-    create2D(geometry.boundingBox);
+    //create2D(geometry.boundingBox);
     flatGeometry = geometry.clone();
 
     createSprings(lines);
@@ -274,6 +276,7 @@ function createSprings(lines, distance, springK) {
 }
 
 function mousemove3D (e) {
+    /*
     render2D();
 
     var rect = canvas.getBoundingClientRect();
@@ -289,6 +292,7 @@ function mousemove3D (e) {
 
     if (intersects.length == 0)
         return;
+    */
 
     // TBD
 };
@@ -341,17 +345,31 @@ function create2D(box) {
 
 function createScene() {
 
-    var uniforms = {
-                    time: { type: "f", value: 1.0 },
+    var uniforms3D = {
+                    flatPattern: { type: "f", value: 0.0 },
                 };
 
-    var shaderMaterial = new THREE.ShaderMaterial( {
+    var uniforms2D = {
+                    flatPattern: { type: "f", value: 1.0 },
+                };
 
-        uniforms: uniforms,
+    var attributes2D = {
+                    position3d: { type: 'v3', value: geometry.vertices }
+    }
+
+    var shaderMaterial3D = new THREE.ShaderMaterial( {
+        uniforms: uniforms3D,
         vertexShader: document.getElementById( 'vertexShader' ).textContent,
         fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
         side: THREE.DoubleSide
+    } );
 
+    var shaderMaterial2D = new THREE.ShaderMaterial( {
+        uniforms: uniforms2D,
+        attributes: attributes2D,
+        vertexShader: document.getElementById( 'vertexShader' ).textContent,
+        fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+        side: THREE.DoubleSide
     } );
 
     var phongMaterial = new THREE.MeshPhongMaterial( { 
@@ -364,7 +382,7 @@ function createScene() {
         } );
 
     var multiMaterial = [
-        shaderMaterial,
+        shaderMaterial3D,
         new THREE.MeshBasicMaterial( { 
             color: 0xEEEEEE, 
             shading: THREE.FlatShading, 
@@ -374,7 +392,7 @@ function createScene() {
     ];
 
     scene = new THREE.Scene();
-    var mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, multiMaterial);
+    mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, multiMaterial);
    
     scene.add(mesh);
     if (isMirror) {
@@ -399,6 +417,10 @@ function createScene() {
     vertexGeometry = new THREE.SphereGeometry(0.01, 16, 16);
     vertexMesh = new THREE.Mesh(vertexGeometry, new THREE.MeshBasicMaterial({ color:0x770000}));
     scene.add(vertexMesh);
+
+    flatMesh = new THREE.Mesh(flatGeometry, shaderMaterial2D);
+    flatMesh.applyMatrix(new THREE.Matrix4().makeTranslation(1, 0, 0));
+    scene.add(flatMesh);
 }
 
 function mousemove2D (e) {
@@ -484,6 +506,10 @@ function render3D() {
     geometry.normalsNeedUpdate = true;
     geometry.verticesNeedUpdate = true;
 
+    // TODO: make this work
+    flatMesh.material.attributes.position3d.value = geometry.vertices;
+    flatMesh.material.attributes.position3d.needsUpdate = true;
+    
     renderer.render(scene, camera);
 
     if (frame % 100 == 0) {

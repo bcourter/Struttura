@@ -10,7 +10,7 @@
 
 <body>
     <div class="content grid">
-        <div id="3d" class="col s1of2" >
+        <div id="3d" class="col s1of1" >
             <div class="panel">
                 <span style="float:left;"> [ 
                     <a href='.'>Shirt</a> | 
@@ -27,12 +27,18 @@
         <script id="vertexShader" type="x-shader/x-vertex">
 
             varying vec3 vVertexPosition;
+            attribute vec3 position3d;
+            uniform float flatPattern;
 
             void main()
             {
                 vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
                 gl_Position = projectionMatrix * mvPosition;
-                vVertexPosition = position;
+                if (flatPattern == 0.0) {
+                    vVertexPosition = position;
+                } else {
+                    vVertexPosition = position3d;
+                }
             }
 
         </script>
@@ -45,7 +51,7 @@
 
             void main( void ) {
                 
-                gl_FragColor = vec4(1.0, vVertexPosition.y / 0.5, 0.0, 1.0);
+                gl_FragColor = vec4(1.0, 1.0 - vVertexPosition.y / 0.8, vVertexPosition.x * 5.0, 1.0);
             }
 
         </script>
