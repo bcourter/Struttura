@@ -1,4 +1,4 @@
-require(["text!shaders/vertex.glsl", "text!shaders/testFragment.glsl"], function(vertexShader, fragmentShader) { 
+require(["./shaders"], function(strutturaShaders) { 
 
 var renderer, camera, settings, container3D, panels, scene
 var material, geometry, physics, flatGeometry;
@@ -352,33 +352,6 @@ function create2D(box) {
 
 function createScene() {
 
-    var uniforms3D = {
-                    flatPattern: { type: "f", value: 0.0 },
-                };
-
-    var uniforms2D = {
-                    flatPattern: { type: "f", value: 1.0 },
-                };
-
-    var attributes2D = {
-                    position3d: { type: 'v3', value: geometry.vertices }
-    }
-
-    var shaderMaterial3D = new THREE.ShaderMaterial( {
-        uniforms: uniforms3D,
-        vertexShader: vertexShader,
-        fragmentShader: fragmentShader,
-        side: THREE.DoubleSide
-    } );
-
-    var shaderMaterial2D = new THREE.ShaderMaterial( {
-        uniforms: uniforms2D,
-        attributes: attributes2D,
-        vertexShader: vertexShader,
-        fragmentShader: fragmentShader,
-        side: THREE.DoubleSide
-    } );
-
     var phongMaterial = new THREE.MeshPhongMaterial( { 
             color: 0x000000, 
             side: THREE.DoubleSide,
@@ -389,7 +362,7 @@ function createScene() {
         } );
 
     var multiMaterial = [
-        shaderMaterial3D,
+        strutturaShaders.shaderMaterial3D,
         new THREE.MeshBasicMaterial( { 
             color: 0xEEEEEE,
             shading: THREE.FlatShading, 
@@ -434,7 +407,7 @@ function createScene() {
     flatScene = new THREE.Scene();
     flatScene.add(directionalLight);
 
-    flatMesh = new THREE.Mesh(flatGeometry, shaderMaterial2D);
+    flatMesh = new THREE.Mesh(flatGeometry, strutturaShaders.shaderMaterial2D);
     flatMesh.position.x = 0.6;
     flatMesh.position.y = -offset;
     flatScene.add(flatMesh);
