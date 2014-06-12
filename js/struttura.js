@@ -1,3 +1,5 @@
+require(["text!shaders/vertex.glsl", "text!shaders/testFragment.glsl"], function(vertexShader, fragmentShader) { 
+
 var renderer, camera, settings, container3D, panels, scene
 var material, geometry, physics, flatGeometry;
 var mesh, lines, curves, isMirror;
@@ -364,16 +366,16 @@ function createScene() {
 
     var shaderMaterial3D = new THREE.ShaderMaterial( {
         uniforms: uniforms3D,
-        vertexShader: document.getElementById( 'vertexShader' ).textContent,
-        fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
         side: THREE.DoubleSide
     } );
 
     var shaderMaterial2D = new THREE.ShaderMaterial( {
         uniforms: uniforms2D,
         attributes: attributes2D,
-        vertexShader: document.getElementById( 'vertexShader' ).textContent,
-        fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
         side: THREE.DoubleSide
     } );
 
@@ -682,3 +684,5 @@ function getGetValue(key){
 
     return res[1];
 }
+
+}); // end require.js wrapper 

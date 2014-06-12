@@ -23,38 +23,6 @@
 
         <canvas id="c" class="col s1of2"></canvas>
     </div>
-
-        <script id="vertexShader" type="x-shader/x-vertex">
-
-            varying vec3 vVertexPosition;
-            attribute vec3 position3d;
-            uniform float flatPattern;
-
-            void main()
-            {
-                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-                gl_Position = projectionMatrix * mvPosition;
-                if (flatPattern == 0.0) {
-                    vVertexPosition = position;
-                } else {
-                    vVertexPosition = position3d;
-                }
-            }
-
-        </script>
-
-        <script id="fragmentShader" type="x-shader/x-fragment">
-
-            uniform float time;
- 
-            varying vec3 vVertexPosition;
-
-            void main( void ) {
-                
-                gl_FragColor = vec4(1.0, mod(1.0 - vVertexPosition.y, 0.1)/0.25, vVertexPosition.x * 5.0, 1.0);
-            }
-
-        </script>
    
     <script type="text/javascript" src="js/physics.js"></script>
 
@@ -79,7 +47,7 @@
 
     <script src="js/partloader.js"></script>
     <script src="js/functions.js"></script>
-    <script src="js/struttura.js"></script>
+    <script data-main="js/struttura" src="js/require.js"></script>
 
 </body>
 
