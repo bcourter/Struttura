@@ -1,4 +1,5 @@
 varying vec3 vVertexPosition;
+uniform float zoom;
 uniform float scaleX;
 uniform float scaleY;
 uniform float shiftX;
@@ -16,8 +17,8 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void main( void ) {
-    float x = vVertexPosition.x * scaleX + shiftX;
-    float y = vVertexPosition.y * scaleY + shiftY;
+    float x = zoom * (vVertexPosition.x * scaleX + shiftX);
+    float y = zoom * (vVertexPosition.y * scaleY + shiftY);
 
     float hue = eggholder(x, y, C);
 

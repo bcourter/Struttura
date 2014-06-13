@@ -54,11 +54,24 @@ define(dependencies, function(defaultVertexShader) {
     	var adapter = {};
 
     	for (uniformName in uniforms) {
+    		var uniform = uniforms[uniformName];
+    		
 	    	Object.defineProperty(adapter, uniformName, {
-	    		get: (function(u) { return function() { return u.value; }})(uniforms[uniformName]),
-	    		set: (function(u) { return function(newValue) { u.value = newValue; }})(uniforms[uniformName])
+	    		get: (function(u) { return function() { return u.value; }})(uniform),
+	    		set: (function(u) { return function(newValue) { u.value = newValue; }})(uniform)
 	    	});
-	    	gui.add(adapter, uniformName);
+
+	    	var param = gui.add(adapter, uniformName);
+
+	    	if ("min" in uniform) {
+	    		param.min(uniform.min);
+	    	}
+	    	if ("max" in uniform) {
+	    		param.max(uniform.max);
+	    	}
+	    	if ("step" in uniform) {
+	    		param.step(uniform.step);
+	    	}
 	    }
 
 	    return gui;
