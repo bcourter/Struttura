@@ -1,34 +1,52 @@
-define(["text!shaders/vertex/default.glsl", "text!shaders/fragment/test.glsl"], function(vertexShader, fragmentShader) { 
+var shaderNames = [
+	"test", 
+	"cortex" 
+];
 
-	var uniforms3D = {
-                    flatPattern: { type: "f", value: 0.0 },
-                };
+var dependencies = [ "text!shaders/vertex/default.glsl" ];
+shaderNames.forEach(function (name) { 
+	dependencies.push("js/shaders/fragment/" + name + ".js");
+	dependencies.push("text!shaders/fragment/" + name + ".glsl");
+});
 
-    var uniforms2D = {
-                    flatPattern: { type: "f", value: 1.0 },
-                };
+define(dependencies, function(defaultVertexShader) { 
 
-    var attributes2D = {
+	var shaders = {};
+
+	for (var ii = 1; ii < arguments.length; ii += 2) {
+		var shader = arguments[ii];
+		shader.fragment = arguments[ii+1];
+		shaders[shader.name] = shader;
+	}
+
+    var attributes = {
                     position3d: { type: 'v3', value: [] }
     }
 
-    var shaderMaterial3D = new THREE.ShaderMaterial( {
-        uniforms: uniforms3D,
-        vertexShader: vertexShader,
-        fragmentShader: fragmentShader,
-        side: THREE.DoubleSide
-    } );
+    function getShaderNames()
+    {
+    	var names = [];
+    	for (key in shaders) {
+    		names.push(key);
+    	}
+    	return names;
+    }
 
-    var shaderMaterial2D = new THREE.ShaderMaterial( {
-        uniforms: uniforms2D,
-        attributes: attributes2D,
-        vertexShader: vertexShader,
-        fragmentShader: fragmentShader,
-        side: THREE.DoubleSide
-    } );
+    function getShaderMaterial(name) {
+    	if (!(name in shaders)) {
+    		return null;
+    	}
+    	return new THREE.ShaderMaterial({
+        	uniforms: shaders[name].uniforms,
+	        attributes: attributes,
+    	    vertexShader: defaultVertexShader,
+        	fragmentShader: shaders[name].fragment,
+        	side: THREE.DoubleSide
+    	});
+    }
 
     return {
-    	shaderMaterial3D: shaderMaterial3D,
-    	shaderMaterial2D: shaderMaterial2D
+    	getShaderNames: getShaderNames,
+    	getShaderMaterial: getShaderMaterial
     };
 });

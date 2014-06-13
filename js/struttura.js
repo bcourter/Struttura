@@ -1,4 +1,4 @@
-require(["./shaders"], function(strutturaShaders) { 
+requirejs(["./shaders"], function(shaderLib) { 
 
 var renderer, camera, settings, container3D, panels, scene
 var material, geometry, physics, flatGeometry;
@@ -17,6 +17,8 @@ var accuracy = 1E-3;
 var accuracySquared = accuracy * accuracy;
 
 var flatScene, flatMesh, flatCamera;
+
+var shaderName;
 
 init();
 animate();
@@ -74,13 +76,25 @@ function init() {
     if (patternFile == null)
         patternFile = 'tshirt-44.js';
 
-    patternFile = 'resources/json3D/' + patternFile;
+    patternPath = 'resources/json3D/' + patternFile;
+
 
     isMirror = getGetValue("mirror") == "0" ? false :  true;;
     if (patternFile == null)
         isMirror = true;
 
-    loadpart(patternFile, function (geometries, lines, curves) { loadGeometry(geometries, lines, curves); });
+    shaderName = getGetValue("gfx") || "Test";
+
+    var shaderMenu = document.getElementById("shaderMenu");
+    shaderLib.getShaderNames().forEach(function(name) {
+        var link = document.createElement("a");
+        var urlStart = [location.protocol, '//', location.host, location.pathname].join('');
+        link.href = urlStart + "?pattern=" + patternFile + "&mirror=" + getGetValue("mirror") + "&gfx=" + name;
+        link.innerHTML = name;
+        shaderMenu.appendChild(link);
+    });
+
+    loadpart(patternPath, function (geometries, lines, curves) { loadGeometry(geometries, lines, curves); });
 
 }
 
@@ -362,7 +376,7 @@ function createScene() {
         } );
 
     var multiMaterial = [
-        strutturaShaders.shaderMaterial3D,
+        shaderLib.getShaderMaterial(shaderName),
         new THREE.MeshBasicMaterial( { 
             color: 0xEEEEEE,
             shading: THREE.FlatShading, 
@@ -407,7 +421,7 @@ function createScene() {
     flatScene = new THREE.Scene();
     flatScene.add(directionalLight);
 
-    flatMesh = new THREE.Mesh(flatGeometry, strutturaShaders.shaderMaterial2D);
+    flatMesh = new THREE.Mesh(flatGeometry, shaderLib.getShaderMaterial(shaderName));
     flatMesh.position.x = 0.6;
     flatMesh.position.y = -offset;
     flatScene.add(flatMesh);
@@ -499,6 +513,9 @@ function render3D() {
     geometry.computeVertexNormals();
     geometry.normalsNeedUpdate = true;
     geometry.verticesNeedUpdate = true;
+
+    mesh.children[0].material.attributes.position3d.value = geometry.vertices;
+    mesh.children[0].material.attributes.position3d.needsUpdate = true;
 
     flatMesh.material.attributes.position3d.value = geometry.vertices;
     flatMesh.material.attributes.position3d.needsUpdate = true;
