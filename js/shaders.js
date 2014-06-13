@@ -55,12 +55,12 @@ define(dependencies, function(defaultVertexShader) {
 
     	for (uniformName in uniforms) {
 	    	Object.defineProperty(adapter, uniformName, {
-	    		get: function() { return uniforms[uniformName].value; },
-	    		set: function(newValue) { uniforms[uniformName].value = newValue; }
+	    		get: (function(u) { return function() { return u.value; }})(uniforms[uniformName]),
+	    		set: (function(u) { return function(newValue) { u.value = newValue; }})(uniforms[uniformName])
 	    	});
 	    	gui.add(adapter, uniformName);
 	    }
-	    
+
 	    return gui;
     }
 
