@@ -1,6 +1,7 @@
 var shaderNames = [
 	"test", 
-	"cortex" 
+	"cortex",
+	"eggholder"
 ];
 
 var dependencies = [ "text!shaders/vertex/default.glsl" ];
