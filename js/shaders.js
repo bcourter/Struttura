@@ -20,10 +20,6 @@ define(dependencies, function(defaultVertexShader) {
 		shaders[shader.name] = shader;
 	}
 
-    var attributes = {
-                    position3d: { type: 'v3', value: [] }
-    }
-
     function getShaderNames()
     {
     	var names = [];
@@ -39,7 +35,9 @@ define(dependencies, function(defaultVertexShader) {
     	}
     	return new THREE.ShaderMaterial({
         	uniforms: shaders[name].uniforms,
-	        attributes: attributes,
+	        attributes: {
+                    position3d: { type: 'v3', value: [] }
+    		},
     	    vertexShader: defaultVertexShader,
         	fragmentShader: shaders[name].fragment,
         	side: THREE.DoubleSide
