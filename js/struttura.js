@@ -96,6 +96,8 @@ function init() {
 
     loadpart(patternPath, function (geometries, lines, curves) { loadGeometry(geometries, lines, curves); });
 
+    var gui = shaderLib.createShaderControls(shaderName);
+    document.getElementById("control-container").appendChild(gui.domElement);
 }
 
 function loadGeometry(geometries, lines, curves) {
@@ -376,7 +378,7 @@ function createScene() {
         } );
 
     var multiMaterial = [
-        shaderLib.getShaderMaterial(shaderName),
+        shaderLib.createShaderMaterial(shaderName),
         new THREE.MeshBasicMaterial( { 
             color: 0xEEEEEE,
             shading: THREE.FlatShading, 
@@ -421,7 +423,7 @@ function createScene() {
     flatScene = new THREE.Scene();
     flatScene.add(directionalLight);
 
-    flatMesh = new THREE.Mesh(flatGeometry, shaderLib.getShaderMaterial(shaderName));
+    flatMesh = new THREE.Mesh(flatGeometry, shaderLib.createShaderMaterial(shaderName));
     flatMesh.position.x = 0.6;
     flatMesh.position.y = -offset;
     flatScene.add(flatMesh);

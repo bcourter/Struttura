@@ -29,7 +29,7 @@ define(dependencies, function(defaultVertexShader) {
     	return names;
     }
 
-    function getShaderMaterial(name) {
+    function createShaderMaterial(name) {
     	if (!(name in shaders)) {
     		return null;
     	}
@@ -44,8 +44,29 @@ define(dependencies, function(defaultVertexShader) {
     	});
     }
 
+    function createShaderControls(name) {
+		if (!(name in shaders)) {
+    		return null;
+    	}
+    	var uniforms = shaders[name].uniforms;
+    	var gui = new dat.GUI({ autoPlace: false });
+
+    	var adapter = {};
+
+    	for (uniformName in uniforms) {
+	    	Object.defineProperty(adapter, uniformName, {
+	    		get: function() { return uniforms[uniformName].value; },
+	    		set: function(newValue) { uniforms[uniformName].value = newValue; }
+	    	});
+	    	gui.add(adapter, uniformName);
+	    }
+	    
+	    return gui;
+    }
+
     return {
     	getShaderNames: getShaderNames,
-    	getShaderMaterial: getShaderMaterial
+    	createShaderMaterial: createShaderMaterial,
+    	createShaderControls: createShaderControls
     };
 });
