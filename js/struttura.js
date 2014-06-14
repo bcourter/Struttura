@@ -24,8 +24,13 @@ init();
 animate();
 
 function init() {
-    renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer({
+        preserveDrawingBuffer: true     // to save canvas see http://stackoverflow.com/questions/15558418/how-do-you-save-an-image-from-a-three-js-canvas
+    });
     renderer.autoClear = false;
+    var context = renderer.domElement.getContext("experimental-webgl", { preserveDrawingBuffer: true });
+
+
     container3D = document.getElementById('3d');
 
     var width = container3D.offsetWidth;
@@ -98,6 +103,9 @@ function init() {
 
     var gui = shaderLib.createShaderControls(shaderName);
     document.getElementById("control-container").appendChild(gui.domElement);
+
+    document.getElementById("SaveObj").onclick = saveObj;
+    document.getElementById("SaveImage").onclick = saveImage;
 }
 
 function loadGeometry(geometries, lines, curves) {
@@ -146,7 +154,6 @@ function loadGeometry(geometries, lines, curves) {
     }
 
     geometry.computeBoundingBox();
-    //create2D(geometry.boundingBox);
     flatGeometry = geometry.clone();
     var skewZfactor = -2;
     var skewZ = new THREE.Matrix4();
@@ -461,11 +468,19 @@ function render3D() {
     lastTime = time;
 }
 
+function saveImage() {
+    var dataUrl = renderer.domElement.toDataURL();
+
+    var newWindow = window.open(dataUrl, "toDataURL() image");
+    return false;
+}
+
 function saveObj() {
     var op = THREE.saveToObj(new THREE.Mesh(geometry, new THREE.MeshLambertMaterial()));
 
     var newWindow = window.open("");
     newWindow.document.write(op);
+    return false;
 }
 
 THREE.saveToObj = function (object3d) {
