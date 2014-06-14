@@ -1,8 +1,13 @@
+require.config({
+    urlArgs: "bust=" + (new Date()).getTime()
+});
+
 requirejs(["./shaders"], function(shaderLib) { 
 
 var renderer, camera, settings, container3D, panels, scene
-var material, geometry, physics, flatGeometry;
-var mesh, lines, curves, isMirror;
+var material, geometry, physics, flatGeometry, mesh;
+var geometryMirror, flatGeometryMirror, meshMirror;
+var lines, curves, isMirror;
 var vertexGeometry, vertexMesh;
 var trans2D, trans2Dinverse;
 var objModel = [];
@@ -16,7 +21,7 @@ var springiness = 10;
 var accuracy = 1E-3;
 var accuracySquared = accuracy * accuracy;
 
-var flatScene, flatMesh, flatCamera;
+var flatScene, flatMesh, flatMeshMirror, flatCamera;
 
 var shaderName;
 
@@ -84,7 +89,7 @@ function init() {
     patternPath = 'resources/json3D/' + patternFile;
 
 
-    isMirror = getGetValue("mirror") == "0" ? false :  true;;
+    isMirror = !(getGetValue("mirror") == "0");
     if (patternFile == null)
         isMirror = true;
 
@@ -168,6 +173,9 @@ function loadGeometry(geometries, lines, curves) {
 
     var box = geometry.boundingBox.clone().union(curveBox);
 
+    if (isMirror)
+        box.union
+
     var xOffset = box.min.x;
     var xDist = box.size().x + xOffset;
     var thetaOffset = Math.PI * (xOffset / xDist + 1 / 2); 
@@ -196,6 +204,17 @@ function loadGeometry(geometries, lines, curves) {
 
         if (numbersAreEqual(geometry.vertices[k].y, 0))
             physics.points[k].multiplier = new THREE.Vector3(1, 0, 1);
+
+    }
+
+
+    if (isMirror) {
+        geometryMirror = geometry.clone();
+        flatGeometryMirror = flatGeometry.clone();
+
+        for (var i = 0; i < geometry.vertices.length; i++) {
+            geometryMirror.vertices[i].x *= -1;
+        }
 
     }
 
@@ -341,15 +360,6 @@ function numbersAreEqual(a, b) {
 }
 
 function createScene() {
-    var phongMaterial = new THREE.MeshPhongMaterial( { 
-            color: 0x000000, 
-            side: THREE.DoubleSide,
-            shading: THREE.FlatShading, 
-            specular: 0x999999,
-            emissive: 0x000000,
-            shininess: 10 
-        } );
-
     var multiMaterial = [
         shaderLib.createShaderMaterial(shaderName),
         new THREE.MeshBasicMaterial( { 
@@ -370,10 +380,21 @@ function createScene() {
     scene.add(mesh);
 
     if (isMirror) {
-        var mirrorObj = mesh.clone();
-        mirrorObj.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
-        mirrorObj.position.y -= offset;
-        scene.add(mirrorObj);
+        var multiMaterialMirror = [
+            shaderLib.createShaderMaterial(shaderName),
+            new THREE.MeshBasicMaterial( { 
+                color: 0xEEEEEE,
+                shading: THREE.FlatShading, 
+                opacity: 0.2,
+                transparent: true,
+                wireframe: true,
+                wireframeLinewidth: 2
+            } )
+        ];
+
+        meshMirror = THREE.SceneUtils.createMultiMaterialObject(geometryMirror, multiMaterialMirror);
+        meshMirror.position.y -= offset;
+        scene.add(meshMirror);
     }
 
     var ambientLight = new THREE.AmbientLight(0x666666);
@@ -400,6 +421,15 @@ function createScene() {
     flatMesh.position.x = 0.5;
     flatMesh.position.y = -offset;
     flatScene.add(flatMesh);
+
+    if (isMirror) {
+        flatMeshMirror = new THREE.Mesh(flatGeometryMirror, shaderLib.createShaderMaterial(shaderName));
+        flatMeshMirror.position.x = 0.5;
+        flatMeshMirror.position.y = -offset;
+        flatMeshMirror.position.y = -offset - 0.05;
+        flatMeshMirror.rotation.x = Math.PI;
+        flatScene.add(flatMeshMirror);
+    }
 
     flatCamera.lookAt(flatScene.position);
 }
@@ -448,19 +478,41 @@ function render3D() {
     flatMesh.material.attributes.position3d.value = geometry.vertices;
     flatMesh.material.attributes.position3d.needsUpdate = true;
 
+    if (isMirror) {
+        geometryMirror.computeFaceNormals();
+        geometryMirror.computeVertexNormals();
+        geometryMirror.normalsNeedUpdate = true;
+        geometryMirror.verticesNeedUpdate = true;
+
+        for (var i = 0; i < geometry.vertices.length; i++) {
+            var v = geometry.vertices[i];
+         //   var vm = geometryMirror.vertices[i];
+
+            geometryMirror.vertices[i].x = -v.x;
+            geometryMirror.vertices[i].y = v.y;
+            geometryMirror.vertices[i].z = v.z;
+        }
+
+        meshMirror.children[0].material.attributes.position3d.value = geometryMirror.vertices;
+        meshMirror.children[0].material.attributes.position3d.needsUpdate = true;
+
+        flatMeshMirror.material.attributes.position3d.value = geometryMirror.vertices;
+        flatMeshMirror.material.attributes.position3d.needsUpdate = true;   
+    }
+
     renderer.clear();
     renderer.render(scene, camera);
     renderer.clearDepth();
     renderer.render(flatScene, flatCamera);
 
-    if (frame % 100 == 0) {
-        var viewdata = [16];
+    // if (frame % 100 == 0) {
+    //     var viewdata = [16];
 
-        for (var i = 0; i < 16; i++)
-            viewdata[i] = camera.projectionMatrix[i];
+    //     for (var i = 0; i < 16; i++)
+    //         viewdata[i] = camera.projectionMatrix[i];
 
-        setCookie("view", viewdata.join()); 
-    }
+    //     setCookie("view", viewdata.join()); 
+    // }
 
     physics.update(0.006);
 
@@ -471,7 +523,7 @@ function render3D() {
 function saveImage() {
     var dataUrl = renderer.domElement.toDataURL();
 
-    var newWindow = window.open(dataUrl, "toDataURL() image");
+    var newWindow = window.open(dataUrl, "Image");
     return false;
 }
 
