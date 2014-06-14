@@ -50,13 +50,3 @@ a:hover {
     border-width: 1px;    
     border-color: #444;
 }
-
-#shaderMenu {
-  position: absolute;
-  top: 40pt;
-  margin: 1em;
-}
-
-#shaderMenu a {
-  display: block;
-}

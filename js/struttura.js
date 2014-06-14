@@ -148,6 +148,13 @@ function loadGeometry(geometries, lines, curves) {
     geometry.computeBoundingBox();
     //create2D(geometry.boundingBox);
     flatGeometry = geometry.clone();
+    var skewZfactor = -2;
+    var skewZ = new THREE.Matrix4();
+    skewZ.elements[9] = skewZfactor;
+    flatGeometry.applyMatrix(skewZ);
+    // for (var i = 0; i < flatGeometry.vertices.length; i++) {
+    //     flatGeometry.vertices[i].;
+    // }
 
     createSprings(lines);
     createSprings(curves, 0, springiness * 10);
@@ -341,13 +348,13 @@ function create2D(box) {
     canvas.height = spoonflowerheight * scale;
 
     var padding = 10;
-    var skewZfactor = -2;
     var scaleX = (canvas.width - 2 * padding) / (box.size().x + 2 * box.min.x);
     var scaleY = (canvas.height - 2 * padding) / (box.size().y);
     var scale = Math.min(scaleX, scaleY);
     var transX = padding / scale;
     var transY = box.size().y + box.min.y + padding / scale + box.min.z * skewZfactor / 1.8;
     var rotation = new THREE.Matrix4().makeRotationX(Math.PI);
+    var skewZfactor = -2;
     var skewZ = new THREE.Matrix4();
     skewZ.elements[9] = skewZfactor;
 
@@ -427,6 +434,7 @@ function createScene() {
     flatMesh.position.x = 0.6;
     flatMesh.position.y = -offset;
     flatScene.add(flatMesh);
+
     flatCamera.lookAt(flatScene.position);
 }
 
