@@ -6,6 +6,9 @@ uniform float sVert, sHorizon, sDiag, sDiagAlt, sArms, sRings, sSpiral, sSpiralA
 uniform float vertPeriod, horizonPeriod, diagPeriod, diagAltPeriod, armPeriod, ringPeriod, spiralPeriod, spiralAltPeriod;
 uniform float numVert, numHorizon, numDiag, numDiagAlt, numRings, numArms, numSpiral, numSpiralAlt;
 
+uniform vec3 Color1;
+uniform vec3 Color2;
+
 const float PI = 3.1415926535;
 const float spiralAngle = PI/3.0;
 const float spiralAngleAlt = 2.0*PI - PI/3.0;
@@ -42,6 +45,7 @@ void main( void ) {
         color += sSpiralAlt * (cos(2.0*numSpiralAlt*(newX*sin(spiralAngleAlt) + newY*cos(spiralAngleAlt)) + spiralAltPeriod*Time));
     //overall brightness/color
     //color *= cos(Time/10.0);
-    gl_FragColor = vec4( vec3( sin( color + Time / 3.0 ) * 0.75, color, sin( color + Time / 3.0 ) * 0.75 ), 1.0 );
+    gl_FragColor.rgb = Color1 * color + Color2 * (1.0 - color);
+    //gl_FragColor = vec4( vec3( sin( color + Time / 3.0 ) * 0.75, color, sin( color + Time / 3.0 ) * 0.75 ), 1.0 );
     //gl_FragColor = vec4(cX, cY, 0.0, 0.0);
 }

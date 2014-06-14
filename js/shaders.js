@@ -1,7 +1,8 @@
 var shaderNames = [
 	"test", 
 	"cortex",
-	"eggholder"
+	"eggholder",
+	//"grainmarch"
 ];
 
 var dependencies = [ "text!shaders/vertex/default.glsl" ];
@@ -55,13 +56,27 @@ define(dependencies, function(defaultVertexShader) {
 
     	for (uniformName in uniforms) {
     		var uniform = uniforms[uniformName];
-    		
-	    	Object.defineProperty(adapter, uniformName, {
-	    		get: (function(u) { return function() { return u.value; }})(uniform),
-	    		set: (function(u) { return function(newValue) { u.value = newValue; }})(uniform)
-	    	});
+    		var param = null;
 
-	    	var param = gui.add(adapter, uniformName);
+    		if (uniform.value instanceof THREE.Vector3) {
+    			// color picker, convert from GLSL rep
+    			Object.defineProperty(adapter, uniformName, {
+		    		get: (function(u) { return function() { 
+		    			return u.value.toArray().map(function (e) { return e*255; }); 
+		    		}})(uniform),
+		    		set: (function(u) { return function(newValue) { 
+		    			u.value.set(newValue[0]/255, newValue[1]/255, newValue[2]/255);
+		    		}})(uniform)
+		    	});
+		    	param = gui.addColor(adapter, uniformName);
+    		} else {
+		    	Object.defineProperty(adapter, uniformName, {
+		    		get: (function(u) { return function() { return u.value; }})(uniform),
+		    		set: (function(u) { return function(newValue) { u.value = newValue; }})(uniform)
+		    	});
+		    	param = gui.add(adapter, uniformName);
+		    }
+
 
 	    	if ("min" in uniform) {
 	    		param.min(uniform.min);
