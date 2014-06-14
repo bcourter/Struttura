@@ -2,6 +2,8 @@ define({
 	name: "Cortex",
 	author: "morphogen",
 	uniforms: {
+		Color1:               { type: "v3", value: new THREE.Vector3(1.0, 0.0, 0.0) },
+        Color2:               { type: "v3", value: new THREE.Vector3(0.0, 0.0, 1.0) },
         Time:            { type: "f", min:   0, max:  25, value:  0.5 },
         sVert:           { type: "f", min:   0, max:   1, value:  0.7 },
         sRings:          { type: "f", min:   0, max:   1, value:  0.7 },
