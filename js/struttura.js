@@ -544,7 +544,7 @@ function saveImage() {
         var oldPositionMirror = flatMeshMirror.position;
     }
   
-    var res = 3;
+    var res = 5;
 
     flatCamera.left = box.min.x;
     flatCamera.right = box.max.x;
@@ -555,23 +555,21 @@ function saveImage() {
     flatCamera.updateProjectionMatrix();
 
     flatMesh.position = new THREE.Vector3();
-    flatMeshMirror.position = new THREE.Vector3();
 
-    if (isMirror)
+    if (isMirror) {
+        flatMeshMirror.position = new THREE.Vector3();
         flatMeshMirror.position.y -= flatPadding;
+    }
 
     var scale = 1 / 0.0254 * 150 / res;
     box.applyMatrix4(new THREE.Matrix4().makeScale(scale, scale, scale))
     var size = box.size();
 
     renderer.setSize(Math.floor(size.x), Math.floor(size.y));
-    //renderer.setSize(1000, Math.floor(size.y));
-
  
     renderer.render(flatScene, flatCamera);
 
     var dataUrl = renderer.domElement.toDataURL();
-
 
     flatCamera.left = oldLeft;
     flatCamera.right = oldRight;     
@@ -583,10 +581,10 @@ function saveImage() {
         flatMeshMirror.position = oldPositionMirror;
     }
 
-    onWindowResize();
-
     var newWindow = window.open(dataUrl, "Image");
     
+
+    onWindowResize();
 
     return false;
 }

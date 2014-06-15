@@ -2,6 +2,10 @@ var shaderNames = [
 	"test", 
 	"cortex",
 	"eggholder",
+    "noise",
+    "noisebands",
+    "spiral",
+    "cocoon",
 	//"grainmarch"
 ];
 
