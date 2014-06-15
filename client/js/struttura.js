@@ -2,7 +2,7 @@ require.config({
     urlArgs: "bust=" + (new Date()).getTime()
 });
 
-requirejs(["./shaders"], function(shaderLib) { 
+requirejs(["./shaders", "./serverComm"], function(shaderLib, serverComm) { 
 
 var renderer, camera, settings, container3D, panels, scene
 var material, geometry, physics, flatGeometry, mesh;
@@ -30,9 +30,6 @@ var flatPadding = 0.02;
 // var spoonflowerheight = 18100;
 var spoonflowerwidth = 10000;
 var spoonflowerheight = 22000;
-
-var saveCount = 0;
-var socket = io.connect('http://' + window.location.host);
 
 init();
 animate();
@@ -584,10 +581,7 @@ function saveImage() {
         flatMeshMirror.position = oldPositionMirror;
     }
 
-    socket.emit('render-frame', {
-                    frame: saveCount++,
-                    file: dataUrl
-                });    
+    serverComm.saveImage(dataUrl);   
 
     onWindowResize();
 
