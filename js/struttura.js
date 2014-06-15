@@ -574,60 +574,62 @@ function saveImage() {
     var xStep = size.x / xCount;
     var yStep = size.y / yCount;
 
-    var newWindow = window.open(dataUrl, "Image");
-    var canvas = newWindow.document.createElement('canvas');
-    canvas.width = sizePixels.x;
-    canvas.height = sizePixels.y;
-    newWindow.document.body.appendChild(canvas);
+    var drawImage = (function() { return function() {
+        var canvas = newWindow.document.createElement('canvas');
+        canvas.id = "theCanvas";
+        canvas.width = sizePixels.x;
+        canvas.height = sizePixels.y;
+        newWindow.document.body.appendChild(canvas);
 
-    var ctx = canvas.getContext('2d');
+        var ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = "rgb(200,0,0)";
-    ctx.fillRect (10, 10, 55, 50);
+        ctx.fillStyle = "rgb(200,0,0)";
+        ctx.fillRect (10, 10, 55, 50);
 
-    ctx.fillStyle = "rgba(0, 0, 200, 0.5)";
-    ctx.fillRect (30, 30, 55, 50);
+        ctx.fillStyle = "rgba(0, 0, 200, 0.5)";
+        ctx.fillRect (30, 30, 55, 50);
 
-    for (var i = 0; i < xCount; i++) {
-        var left = box.min.x + xStep * i;
-        var right = left + xStep;
-        
-        for (var j = 0; j < yCount; j++) {
-            var top = box.min.y + yStep * j;
-            var bottom = top + yStep;
+        for (var i = 0; i < xCount; i++) {
+            var left = box.min.x + xStep * i;
+            var right = left + xStep;
+            
+            for (var j = 0; j < yCount; j++) {
+                var top = box.min.y + yStep * j;
+                var bottom = top + yStep;
 
-            flatCamera.left = left;
-            flatCamera.right = right;
-            flatCamera.bottom = bottom;
-            flatCamera.top = top;
-            flatCamera.updateProjectionMatrix();
+                flatCamera.left = left;
+                flatCamera.right = right;
+                flatCamera.bottom = bottom;
+                flatCamera.top = top;
+                flatCamera.updateProjectionMatrix();
 
-            renderer.clear();
-            renderer.render(flatScene, flatCamera);
+                renderer.clear();
+                renderer.render(flatScene, flatCamera);
 
-            var dataUrl = renderer.domElement.toDataURL();
-            var img = new Image;
-            img.src = dataUrl;
-            ctx.drawImage(img, xFrame * i, yFrame * j);
+                var dataUrl = renderer.domElement.toDataURL();
+                var img = new Image;
+                img.src = dataUrl;
+                ctx.drawImage(img, xFrame * i, yFrame * j);
+            }
         }
 
-    }
+        flatCamera.left = oldLeft;
+        flatCamera.right = oldRight;     
+        flatCamera.top = oldTop;
+        flatCamera.bottom = oldBottom; 
+        flatMesh.position = oldPosition;
+        flatMesh.scale = oldScale;
 
-    flatCamera.left = oldLeft;
-    flatCamera.right = oldRight;     
-    flatCamera.top = oldTop;
-    flatCamera.bottom = oldBottom; 
-    flatMesh.position = oldPosition;
-    flatMesh.scale = oldScale;
+        if (isMirror) {
+            flatMeshMirror.position = oldPositionMirror;
+            flatMeshMirror.scale = oldScaleMirror;
+        }
 
-    if (isMirror) {
-        flatMeshMirror.position = oldPositionMirror;
-        flatMeshMirror.scale = oldScaleMirror;
-    }
+        onWindowResize();
+    }})();
 
-    
-
-    onWindowResize();
+    var newWindow = window.open("http://" + window.location.host + "/saveImage.html", "Image");
+    newWindow.addEventListener('load', drawImage, true);
 
     return false;
 }
