@@ -1,6 +1,6 @@
-require.config({
-    urlArgs: "bust=" + (new Date()).getTime()
-});
+// require.config({
+//     urlArgs: "bust=" + (new Date()).getTime()
+// });
 
 requirejs(["./shaders", "./serverComm"], function(shaderLib, serverComm) { 
 
@@ -25,11 +25,10 @@ var flatScene, flatMesh, flatMeshMirror, flatCamera;
 
 var shaderName;
 
-var flatPadding = 0.02;
 // var spoonflowerwidth = 8100;
 // var spoonflowerheight = 18100;
-var spoonflowerwidth = 10000;
-var spoonflowerheight = 22000;
+// var spoonflowerwidth = 10000;
+// var spoonflowerheight = 22000;
 
 init();
 animate();
@@ -218,6 +217,7 @@ function loadGeometry(geometries, lines, curves) {
     if (isMirror) {
         geometryMirror = geometry.clone();
         flatGeometryMirror = flatGeometry.clone();
+        flatGeometryMirror.computeBoundingBox();
 
         for (var i = 0; i < geometry.vertices.length; i++) {
             geometryMirror.vertices[i].x *= -1;
@@ -423,19 +423,20 @@ function createScene() {
     
     flatScene = new THREE.Scene();
     flatScene.add(directionalLight);
+    var flatSceneScale = 0.5;
 
+    var xOffset = 1;
     flatMesh = new THREE.Mesh(flatGeometry, shaderLib.createShaderMaterial(shaderName));
-    flatMesh.position.x = 0.5;
-    flatMesh.position.y = -offset;
- //   flatMesh.scale = 10;
+    flatMesh.position.x = xOffset;
+    flatMesh.position.y = offset;
+    flatMesh.scale = new THREE.Vector3(flatSceneScale, flatSceneScale, flatSceneScale);
     flatScene.add(flatMesh);
 
     if (isMirror) {
         flatMeshMirror = new THREE.Mesh(flatGeometryMirror, shaderLib.createShaderMaterial(shaderName));
-        flatMeshMirror.position.x = 0.5;
-        flatMeshMirror.position.y = -offset;
-        flatMeshMirror.position.y = -offset - flatPadding;
-        flatMeshMirror.scale.y = -1;
+        flatMeshMirror.position.x = xOffset;
+        flatMeshMirror.position.y = offset;
+        flatMeshMirror.scale = new THREE.Vector3(-flatSceneScale, flatSceneScale, flatSceneScale);
         flatScene.add(flatMeshMirror);
     }
 
@@ -536,15 +537,18 @@ function saveImage() {
     var oldBottom = flatCamera.bottom;
 
     var oldPosition = flatMesh.position;
+    var oldScale = flatMesh.scale;
 
     var box = flatGeometry.boundingBox.clone();
 
     if (isMirror) {
-        box.min.y -= box.size().y + flatPadding;
+        var shiftX = box.size().x;
+        box.min.x -= shiftX;
         var oldPositionMirror = flatMeshMirror.position;
+        var oldScaleMirror = flatMeshMirror.scale;
     }
   
-    var res = 5;
+    var res = 8;
 
     flatCamera.left = box.min.x;
     flatCamera.right = box.max.x;
@@ -555,10 +559,11 @@ function saveImage() {
     flatCamera.updateProjectionMatrix();
 
     flatMesh.position = new THREE.Vector3();
+    flatMesh.scale = new THREE.Vector3(1, 1, 1);
 
     if (isMirror) {
         flatMeshMirror.position = new THREE.Vector3();
-        flatMeshMirror.position.y -= flatPadding;
+        flatMeshMirror.scale = new THREE.Vector3(-1, 1, 1);
     }
 
     var scale = 1 / 0.0254 * 150 / res;
@@ -576,9 +581,11 @@ function saveImage() {
     flatCamera.top = oldTop;
     flatCamera.bottom = oldBottom; 
     flatMesh.position = oldPosition;
+    flatMesh.scale = oldScale;
 
     if (isMirror) {
         flatMeshMirror.position = oldPositionMirror;
+        flatMeshMirror.scale = oldScaleMirror;
     }
 
     serverComm.saveImage(dataUrl);   
