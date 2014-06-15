@@ -25,6 +25,12 @@ var flatScene, flatMesh, flatMeshMirror, flatCamera;
 
 var shaderName;
 
+var flatPadding = 0.02;
+// var spoonflowerwidth = 8100;
+// var spoonflowerheight = 18100;
+var spoonflowerwidth = 10000;
+var spoonflowerheight = 22000;
+
 init();
 animate();
 
@@ -167,6 +173,7 @@ function loadGeometry(geometries, lines, curves) {
     // for (var i = 0; i < flatGeometry.vertices.length; i++) {
     //     flatGeometry.vertices[i].;
     // }
+    flatGeometry.computeBoundingBox();
 
     createSprings(lines);
     createSprings(curves, 0, springiness * 10);
@@ -420,14 +427,15 @@ function createScene() {
     flatMesh = new THREE.Mesh(flatGeometry, shaderLib.createShaderMaterial(shaderName));
     flatMesh.position.x = 0.5;
     flatMesh.position.y = -offset;
+ //   flatMesh.scale = 10;
     flatScene.add(flatMesh);
 
     if (isMirror) {
         flatMeshMirror = new THREE.Mesh(flatGeometryMirror, shaderLib.createShaderMaterial(shaderName));
         flatMeshMirror.position.x = 0.5;
         flatMeshMirror.position.y = -offset;
-        flatMeshMirror.position.y = -offset - 0.05;
-        flatMeshMirror.rotation.x = Math.PI;
+        flatMeshMirror.position.y = -offset - flatPadding;
+        flatMeshMirror.scale.y = -1;
         flatScene.add(flatMeshMirror);
     }
 
@@ -521,9 +529,67 @@ function render3D() {
 }
 
 function saveImage() {
+    var width = renderer.width
+    var height = renderer.height
+
+    var oldLeft = flatCamera.left;
+    var oldRight = flatCamera.right;
+    var oldTop = flatCamera.top;
+    var oldBottom = flatCamera.bottom;
+
+    var oldPosition = flatMesh.position;
+
+    var box = flatGeometry.boundingBox.clone();
+
+    if (isMirror) {
+        box.min.y -= box.size().y + flatPadding;
+        var oldPositionMirror = flatMeshMirror.position;
+    }
+  
+    var res = 3;
+
+    flatCamera.left = box.min.x;
+    flatCamera.right = box.max.x;
+
+    flatCamera.bottom = box.min.y;
+    flatCamera.top = box.max.y;
+
+    flatCamera.updateProjectionMatrix();
+
+    flatMesh.position = new THREE.Vector3();
+    flatMeshMirror.position = new THREE.Vector3();
+
+    if (isMirror)
+        flatMeshMirror.position.y -= flatPadding;
+
+    var scale = 1 / 0.0254 * 150 / res;
+    box.applyMatrix4(new THREE.Matrix4().makeScale(scale, scale, scale))
+    var size = box.size();
+
+    renderer.setSize(Math.floor(size.x), Math.floor(size.y));
+    //renderer.setSize(1000, Math.floor(size.y));
+
+ 
+    renderer.render(flatScene, flatCamera);
+
     var dataUrl = renderer.domElement.toDataURL();
 
+
+    flatCamera.left = oldLeft;
+    flatCamera.right = oldRight;     
+    flatCamera.top = oldTop;
+    flatCamera.bottom = oldBottom; 
+    flatMesh.position = oldPosition;
+
+    if (isMirror) {
+        flatMeshMirror.position = oldPositionMirror;
+    }
+
+    onWindowResize();
+
     var newWindow = window.open(dataUrl, "Image");
+    
+
     return false;
 }
 
