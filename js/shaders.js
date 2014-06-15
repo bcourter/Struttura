@@ -54,7 +54,13 @@ define(dependencies, function(defaultVertexShader) {
     		return null;
     	}
     	var uniforms = shaders[name].uniforms;
-    	var gui = new dat.GUI({ autoPlace: false });
+
+        var options = { autoPlace: false };
+        if ("presets" in shaders[name]) {
+            options.load = shaders[name].presets;
+        }
+
+    	var gui = new dat.GUI(options);
 
     	var adapter = {};
         var folders = {};
@@ -102,6 +108,7 @@ define(dependencies, function(defaultVertexShader) {
 	    	}
 	    }
 
+        gui.remember(adapter);
 	    return gui;
     }
 
