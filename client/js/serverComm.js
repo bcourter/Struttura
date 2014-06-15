@@ -1,16 +1,20 @@
-define([], function() {
+define(function() {
 
 	var socket = io.connect('http://' + window.location.host);
 	var saveCount = 0;
 	
-	function saveImage(dataUrl) {
-		socket.emit('render-frame', {
-            frame: saveCount++,
+	function saveImageTile(dataUrl, imageId, x, y, xCount, yCount) {
+		socket.emit('save-tile', {
+			imageId: imageId,
+            x: x,
+            y: y,
+            w: xCount,
+            h: yCount,
             file: dataUrl
         }); 
 	}
 
 	return {
-		saveImage: saveImage
+		saveImageTile: saveImageTile
 	};
 });
