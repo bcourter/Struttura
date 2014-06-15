@@ -425,7 +425,7 @@ function createScene() {
     flatScene.add(directionalLight);
     var flatSceneScale = 0.5;
 
-    var xOffset = 1;
+    var xOffset = .7;
     flatMesh = new THREE.Mesh(flatGeometry, shaderLib.createShaderMaterial(shaderName));
     flatMesh.position.x = xOffset;
     flatMesh.position.y = offset;
@@ -547,16 +547,10 @@ function saveImage() {
         var oldPositionMirror = flatMeshMirror.position;
         var oldScaleMirror = flatMeshMirror.scale;
     }
-  
-    var res = 8;
 
-    flatCamera.left = box.min.x;
-    flatCamera.right = box.max.x;
+    var size = box.size();
 
-    flatCamera.bottom = box.min.y;
-    flatCamera.top = box.max.y;
-
-    flatCamera.updateProjectionMatrix();
+    var res = document.getElementById("reduction").value;
 
     flatMesh.position = new THREE.Vector3();
     flatMesh.scale = new THREE.Vector3(1, 1, 1);
@@ -567,14 +561,57 @@ function saveImage() {
     }
 
     var scale = 1 / 0.0254 * 150 / res;
-    box.applyMatrix4(new THREE.Matrix4().makeScale(scale, scale, scale))
-    var size = box.size();
+    var boxPixels = box.clone().applyMatrix4(new THREE.Matrix4().makeScale(scale, scale, scale))
+    var sizePixels = boxPixels.size();
 
-    renderer.setSize(Math.floor(size.x), Math.floor(size.y));
- 
-    renderer.render(flatScene, flatCamera);
+    var maxDim = 1024;
+    var xCount = Math.ceil(sizePixels.x / maxDim);
+    var yCount = Math.ceil(sizePixels.y / maxDim);
+    var xFrame = Math.ceil(sizePixels.x / xCount);
+    var yFrame = Math.ceil(sizePixels.y / yCount);
 
-    var dataUrl = renderer.domElement.toDataURL();
+    renderer.setSize(xFrame, yFrame);
+    var xStep = size.x / xCount;
+    var yStep = size.y / yCount;
+
+    var newWindow = window.open(dataUrl, "Image");
+    var canvas = newWindow.document.createElement('canvas');
+    canvas.width = sizePixels.x;
+    canvas.height = sizePixels.y;
+    newWindow.document.body.appendChild(canvas);
+
+    var ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = "rgb(200,0,0)";
+    ctx.fillRect (10, 10, 55, 50);
+
+    ctx.fillStyle = "rgba(0, 0, 200, 0.5)";
+    ctx.fillRect (30, 30, 55, 50);
+
+    for (var i = 0; i < xCount; i++) {
+        var left = box.min.x + xStep * i;
+        var right = left + xStep;
+        
+        for (var j = 0; j < yCount; j++) {
+            var top = box.min.y + yStep * j;
+            var bottom = top + yStep;
+
+            flatCamera.left = left;
+            flatCamera.right = right;
+            flatCamera.bottom = bottom;
+            flatCamera.top = top;
+            flatCamera.updateProjectionMatrix();
+
+            renderer.clear();
+            renderer.render(flatScene, flatCamera);
+
+            var dataUrl = renderer.domElement.toDataURL();
+            var img = new Image;
+            img.src = dataUrl;
+            ctx.drawImage(img, xFrame * i, yFrame * j);
+        }
+
+    }
 
     flatCamera.left = oldLeft;
     flatCamera.right = oldRight;     
@@ -588,7 +625,6 @@ function saveImage() {
         flatMeshMirror.scale = oldScaleMirror;
     }
 
-    var newWindow = window.open(dataUrl, "Image");
     
 
     onWindowResize();

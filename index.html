@@ -10,21 +10,25 @@
 
 <body>
     <div class="content grid">
-        <div id="3d" class="col s1of1" >
-            <div class="panel">
-                <span style="float:left;"> [ 
-                    <a href='.'>Shirt</a> | 
-                    <a href='?pattern=dress21-28.js&mirror=0'>Dress</a> |
-                    <a href='?pattern=jeans-19.js'>Jeans</a> ] 
-                </span>
-                <span style="float:right;"> <a id="SaveObj" href="#"> Save OBJ </a> </span>
-                <span style="float:right;"> <a id="SaveImage" href="#"> Save Image </a> </span>
-            </div>
-            <div id="shaderMenu">
-            </div>
+        <div class="panel">
+            <span style="float:left;"> [ 
+                <a href='.'>Shirt</a> | 
+                <a href='?pattern=dress21-28.js&mirror=0'>Dress</a> |
+                <a href='?pattern=jeans-19.js'>Jeans</a> ] 
+            </span>
+            <span style="float:right;"> <a id="SaveObj" href="#"> Save OBJ </a> </span>
+            <select id="reduction" style="float:right;">
+                <option value="4">4x</option>
+                <option value="2">2x</option>
+                <option value="1">1x</option>
+            </select>
+            <span style="float:right;"> <a id="SaveImage" href="#"> Save Image </a> </span>
+        </div>
+        <div id="shaderMenu">
         </div>
 
-        <canvas id="c" class="col s1of2"></canvas>
+        <div id="3d">
+        </div>
     </div>
 
     <div id="control-container" style="position: absolute; left: 0; bottom: 0">
