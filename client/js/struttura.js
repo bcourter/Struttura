@@ -31,6 +31,9 @@ var flatPadding = 0.02;
 var spoonflowerwidth = 10000;
 var spoonflowerheight = 22000;
 
+var saveCount = 0;
+var socket = io.connect('http://' + window.location.host);
+
 init();
 animate();
 
@@ -581,8 +584,10 @@ function saveImage() {
         flatMeshMirror.position = oldPositionMirror;
     }
 
-    var newWindow = window.open(dataUrl, "Image");
-    
+    socket.emit('render-frame', {
+                    frame: saveCount++,
+                    file: dataUrl
+                });    
 
     onWindowResize();
 

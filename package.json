@@ -1,0 +1,30 @@
+{
+  "name": "struttura",
+  "version": "0.1.0",
+  "description": "",
+  "author": "",
+  "contributors": [
+    {
+      "name": "Foo Bar",
+      "email": "foo.bar@example.com"
+    }
+  ],
+  "scripts": {
+    "start": "node server/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bcourter/struttura"
+  },
+  "bugs": {
+    "url": "https://github.com/bcourter/struttura/issues"
+  },
+  "keywords": [],
+  "dependencies": {
+    "express": "~4.4.3",
+    "socket.io": "~1.0.4",
+    "compression": "~1.0.7"
+  },
+  "devDependencies": {},
+  "license": "MIT"
+}
