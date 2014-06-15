@@ -332,8 +332,8 @@ function createSprings(lines, distance, springK) {
             //         first.neighborsSq.push(second);
             //         second.neighborsSq.push(first);
             //     }
-
             // }
+            
         }
     }
 }

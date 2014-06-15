@@ -4,8 +4,9 @@ var shaderNames = [
 	"eggholder",
     "noise",
     "noisebands",
-    "spiral",
-    "cocoon",
+    "woodfrag"
+    //"spiral",
+    //"cocoon",
 	//"grainmarch"
 ];
 
