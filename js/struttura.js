@@ -459,13 +459,11 @@ function animate() {
     requestAnimationFrame(animate, renderer.domElement);
 
     render3D();
-  //  render2D();
     controls.update();
     //stats.update();
 }
 
 var frame = 0;
-//var geom = THREE.CubeGeometry(2, 2, 2);
 function render3D() {
     frame++;
     var time = new Date().getTime() / 1000;
