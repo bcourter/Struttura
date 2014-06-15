@@ -1,7 +1,7 @@
 // Cortex by morphogen / Nathan Lachenmeyer
 // Adapted from https://github.com/scottnla/grainmarch/blob/master/plugins/cortex.glsl
 
-uniform float Time;
+uniform float Time, Shift;
 uniform float sVert, sHorizon, sDiag, sDiagAlt, sArms, sRings, sSpiral, sSpiralAlt;
 uniform float vertPeriod, horizonPeriod, diagPeriod, diagAltPeriod, armPeriod, ringPeriod, spiralPeriod, spiralAltPeriod;
 uniform float numVert, numHorizon, numDiag, numDiagAlt, numRings, numArms, numSpiral, numSpiralAlt;
@@ -20,7 +20,7 @@ void main( void ) {
     vec2 position = (vVertexPosition.xy * resolution.xy);
 
     float cX = position.x - 0.0;
-    float cY = position.y - 45.0;
+    float cY = position.y + 40.0 * Shift - 30.0;
     
     float newX = log(sqrt(cX*cX + cY*cY));
     float newY = atan(cX, cY);

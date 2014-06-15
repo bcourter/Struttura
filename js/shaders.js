@@ -57,10 +57,19 @@ define(dependencies, function(defaultVertexShader) {
     	var gui = new dat.GUI({ autoPlace: false });
 
     	var adapter = {};
+        var folders = {};
 
     	for (uniformName in uniforms) {
     		var uniform = uniforms[uniformName];
     		var param = null;
+            var guiContainer = gui;
+
+            if ("folder" in uniform) {
+                if (!(uniform.folder in folders)) {
+                    folders[uniform.folder] = gui.addFolder(uniform.folder);
+                }
+                guiContainer = folders[uniform.folder];
+            }
 
     		if (uniform.value instanceof THREE.Vector3) {
     			// color picker, convert from GLSL rep
@@ -72,13 +81,13 @@ define(dependencies, function(defaultVertexShader) {
 		    			u.value.set(newValue[0]/255, newValue[1]/255, newValue[2]/255);
 		    		}})(uniform)
 		    	});
-		    	param = gui.addColor(adapter, uniformName);
+		    	param = guiContainer.addColor(adapter, uniformName);
     		} else {
 		    	Object.defineProperty(adapter, uniformName, {
 		    		get: (function(u) { return function() { return u.value; }})(uniform),
 		    		set: (function(u) { return function(newValue) { u.value = newValue; }})(uniform)
 		    	});
-		    	param = gui.add(adapter, uniformName);
+		    	param = guiContainer.add(adapter, uniformName);
 		    }
 
 
