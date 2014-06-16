@@ -18,6 +18,7 @@ shaderNames.forEach(function (name) {
 define(dependencies, function(defaultVertexShader) { 
 
 	var shaders = {};
+    var gui = null;
 
 	for (var ii = 1; ii < arguments.length; ii += 2) {
 		var shader = arguments[ii];
@@ -49,6 +50,10 @@ define(dependencies, function(defaultVertexShader) {
     	});
     }
 
+    function getCurrentPresetName() {
+        return gui.preset;
+    }
+
     function createShaderControls(name) {
 		if (!(name in shaders)) {
     		return null;
@@ -60,7 +65,7 @@ define(dependencies, function(defaultVertexShader) {
             options.load = shaders[name].presets;
         }
 
-    	var gui = new dat.GUI(options);
+    	gui = new dat.GUI(options);
 
     	var adapter = {};
         var folders = {};
@@ -115,6 +120,7 @@ define(dependencies, function(defaultVertexShader) {
     return {
     	getShaderNames: getShaderNames,
     	createShaderMaterial: createShaderMaterial,
-    	createShaderControls: createShaderControls
+    	createShaderControls: createShaderControls,
+        getCurrentPresetName: getCurrentPresetName
     };
 });

@@ -613,7 +613,7 @@ function saveImage() {
         }
     }
 
-    canvas.toBlob(function (blob) { saveAs(blob, "pattern.png") });
+    canvas.toBlob(function (blob) { saveAs(blob, "Struttura-" + shaderName + "-" + shaderLib.getCurrentPresetName() + ".png") });
     
     flatCamera.left = oldLeft;
     flatCamera.right = oldRight;     
