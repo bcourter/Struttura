@@ -1,11 +1,12 @@
 var shaderNames = [
-	"test", 
-	"cortex",
-	"eggholder",
-    "noise",
-    "noisebands",
-    "wood",
-    "marble"
+	"test"
+	, "cortex"
+	, "eggholder"
+    , "noise"
+    , "noisebands"
+    , "noisegradient"
+    , "wood"
+    , "mandelbrot"
     //"spiral",
     //"cocoon",
 	//"grainmarch"

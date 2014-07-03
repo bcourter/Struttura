@@ -2,23 +2,29 @@
 
 #define NNOISE 4
 
-#define PI 3.141592653
+#define PI 3.1415926535879
 
 varying vec3 vVertexPosition;
 
-uniform vec3 PaleBlue;
-uniform vec3 MediumBlue;
-uniform vec3 DarkBlue;
-uniform vec3 DarkerBlue;
+uniform vec3 c0;
+uniform vec3 c1;
+uniform vec3 c2;
+uniform vec3 c3;
+uniform vec3 c4;
+uniform vec3 c5;
+uniform vec3 c6;
+uniform vec3 c7;
+uniform vec3 c8;
+uniform vec3 c9;
+uniform vec3 c10;
+uniform vec3 c11;
+uniform vec3 c12;
 
 uniform float scale;
+uniform float scaleZ;
 uniform float texture;
+uniform float ramp;
 uniform float brightness;
-
-vec4 PALE_BLUE;
-vec4 MEDIUM_BLUE;
-vec4 DARK_BLUE;
-vec4 DARKER_BLUE;
 
 float snoise(vec3);
 vec4 marble_color(float);
@@ -26,12 +32,11 @@ vec4 spline(float x, vec4 z[25]);
 
 void main() {
 
-	PALE_BLUE.xyz = PaleBlue;
-	MEDIUM_BLUE.xyz = MediumBlue;
-	DARK_BLUE.xyz = DarkBlue;
-	DARKER_BLUE.xyz = DarkerBlue;
-
-	vec3 rp = vVertexPosition.xyz * scale;
+	vec3 rp = vVertexPosition.xyz * scale / 10.0;
+	float zf = exp(scaleZ);
+	rp.x *= zf;
+	rp.y /= zf;
+	rp.z *= zf;
 	
 	// create the grayscale marbling here
 	float marble=0.0;
@@ -52,21 +57,21 @@ void main() {
 vec4 marble_color(float m) {
 	vec4 c[25];
 	
-	c[0] = PALE_BLUE;
-	c[1] = PALE_BLUE;
-	c[2] = MEDIUM_BLUE;
-	c[3] = MEDIUM_BLUE;
-	c[4] = MEDIUM_BLUE;
-	c[5] = PALE_BLUE;
-	c[6] = PALE_BLUE;
-	c[7] = DARK_BLUE;
-	c[8] = DARK_BLUE;
-	c[9] = DARKER_BLUE;
-	c[10] = DARKER_BLUE;
-	c[11] = PALE_BLUE;
-	c[12] = DARKER_BLUE;
+	c[0].xyz = c0;
+	c[1].xyz = c1;
+	c[2].xyz = c2;
+	c[3].xyz = c3;
+	c[4].xyz = c4;
+	c[5].xyz = c5;
+	c[6].xyz = c6;
+	c[7].xyz = c7;
+	c[8].xyz = c8;
+	c[9].xyz = c9;
+	c[10].xyz = c10;
+	c[11].xyz = c11;
+	c[12].xyz = c12;
 	
-	vec4 res = spline(clamp(2.0*m + 0.75, 0.0, 1.0), c);
+	vec4 res = spline(clamp(ramp * (m + 1.0)/2.0, 0.0, 1.0), c);
 	
 	return res;
 }
