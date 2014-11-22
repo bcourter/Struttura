@@ -7,6 +7,7 @@ var shaderNames = [
     , "noisegradient"
     , "wood"
     , "mandelbrot"
+    , "marblephase"
     //"spiral",
     //"cocoon",
 	//"grainmarch"
@@ -72,6 +73,10 @@ define(dependencies, function(defaultVertexShader) {
     		var uniform = uniforms[uniformName];
     		var param = null;
             var guiContainer = gui;
+
+            if (uniform.hide) {
+                continue;
+            }
 
             if ("folder" in uniform) {
                 if (!(uniform.folder in folders)) {
