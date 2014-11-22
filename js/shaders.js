@@ -69,6 +69,10 @@ define(dependencies, function(defaultVertexShader) {
     	var adapter = {};
         var folders = {};
 
+        window.gui = gui;
+        gui.useLocalStorage = true;
+        gui.remember(adapter);
+
     	for (uniformName in uniforms) {
     		var uniform = uniforms[uniformName];
     		var param = null;
@@ -116,7 +120,6 @@ define(dependencies, function(defaultVertexShader) {
 	    	}
 	    }
 
-        gui.remember(adapter);
 	    return gui;
     }
 
