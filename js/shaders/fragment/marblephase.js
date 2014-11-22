@@ -17,7 +17,7 @@ define({
         HueLimit:        { folder: "Color",  type: "f", min:   0, max:   1, value:  1.0 },
         HueShift:        { folder: "Color",  type: "f", min:   0, max:   1, value:  0.0 },
         Saturation:      { folder: "Color",  type: "f", min:   0, max:   1, value:  1.0 },
-        Overexpose:      { folder: "Color",  type: "f", min:   0, max: 0.5, value:  0.0 },
+        Overexpose:      { folder: "Color",  type: "f", min:   0, max:   5, value:  0.0 },
         K: { type: "fv1", hide: true, value: [    
           -7.0, 0.0, 1.0, -21.0, 35.0, 0.0, 0.0, 0.0,
           -6.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,

@@ -70,7 +70,7 @@ define(dependencies, function(defaultVertexShader) {
         var folders = {};
 
         window.gui = gui;
-        gui.useLocalStorage = true;
+        //gui.useLocalStorage = true;
         gui.remember(adapter);
 
     	for (uniformName in uniforms) {
