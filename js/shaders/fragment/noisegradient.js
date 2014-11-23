@@ -16,7 +16,7 @@ define({
         c5:            { type: "v3", value: new THREE.Vector3(1, 1, 1) },
         c6:            { type: "v3", value: new THREE.Vector3(0.65, 0.25, 0.35) },
         c7:            { type: "v3", value: new THREE.Vector3(0.35, 0.25, 0.35) },
-        c8:            { type: "v3", value: new THREE.Vector3(0.75, 0.25, 0.35) },
+        c8:            { type: "v3", value: new THREE.Vector3(0.80, 0.80, 0.35) },
         c9:            { type: "v3", value: new THREE.Vector3(0.45, 0.25, 0.35) },
         c10:           { type: "v3", value: new THREE.Vector3(1, 1, 1) },
         c11:           { type: "v3", value: new THREE.Vector3(0.75, 0.25, 0.35) },
@@ -25,7 +25,7 @@ define({
 
         scale:              { type: "f", min:   1, max:   200, value:  50 },
         scaleZ:              { type: "f", min:   -2, max:  2, value:  0 },
-        texture:            { type: "f", min:   0, max:  44, value:  2.17 },
+        texture:            { type: "f", min:   0, max:  10, value:  2.17 },
         ramp:               { type: "f", min:   0, max:   5, value:  2 },
         brightness:         { type: "f", min:   0, max:   5, value:  1 },
 
@@ -44,15 +44,15 @@ define({
         "c5": [102, 134, 49],
         "c6": [63, 108, 52],
         "c7": [46, 86, 42],
-        "c8": [170, 160, 222],
+        "c8": [200, 200, 222],
         "c9": [132, 159, 230],
         "c10": [75, 86, 213],
         "c11": [69, 65, 211],
         "c12": [45, 45, 165],
-        "scale": 30,
+        "scale": 25,
         "scaleZ": 0,
-        "texture": 11,
-        "ramp": 2.3,
+        "texture": 1.4,
+        "ramp": 1.2,
         "brightness": 1
       }
     },

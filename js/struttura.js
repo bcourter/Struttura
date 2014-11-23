@@ -4,7 +4,7 @@
 
 requirejs(["./shaders"], function(shaderLib) { 
 
-var renderer, camera, settings, container3D, panels, scene
+var renderer, camera, settings, container3D, panels, scene, lights
 var material, geometry, physics, flatGeometry, mesh;
 var geometryMirror, flatGeometryMirror, meshMirror;
 var lines, curves, isMirror;
@@ -367,28 +367,20 @@ function numbersAreEqual(a, b) {
 }
 
 function createScene() {
-    var multiMaterial = [
-        shaderLib.createShaderMaterial(shaderName),
-        new THREE.MeshBasicMaterial( { 
-            color: 0xEEEEEE,
-            shading: THREE.FlatShading, 
-            opacity: 0.2,
-            transparent: true,
-            wireframe: true,
-            wireframeLinewidth: 2
-        } )
-    ];
-
-    scene = new THREE.Scene();
-    mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, multiMaterial);
-
-    var offset = geometry.boundingBox.center().y;
-    mesh.position.y -= offset;   
-    scene.add(mesh);
-
-    if (isMirror) {
-        var multiMaterialMirror = [
+    var multiMaterial = function() { return [
             shaderLib.createShaderMaterial(shaderName),
+            new THREE.MeshPhongMaterial( { 
+                color: 0x000000,
+                ambient: 0x000000,
+                specular: 0xffffff,
+                shading: THREE.FlatShading, 
+                combine: THREE.MultiplyOperation,
+                blending: THREE.NormalBlending,
+                opacity: 0.1,
+                transparent: true,
+                side: THREE.DoubleSide,
+                wireframe: false
+            } ),
             new THREE.MeshBasicMaterial( { 
                 color: 0xEEEEEE,
                 shading: THREE.FlatShading, 
@@ -396,10 +388,18 @@ function createScene() {
                 transparent: true,
                 wireframe: true,
                 wireframeLinewidth: 2
-            } )
-        ];
+            } ) 
+    ] };
 
-        meshMirror = THREE.SceneUtils.createMultiMaterialObject(geometryMirror, multiMaterialMirror);
+    scene = new THREE.Scene();
+    mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, multiMaterial());
+
+    var offset = geometry.boundingBox.center().y;
+    mesh.position.y -= offset;   
+    scene.add(mesh);
+
+    if (isMirror) {
+        meshMirror = THREE.SceneUtils.createMultiMaterialObject(geometryMirror, multiMaterial());
         meshMirror.position.y -= offset;
         scene.add(meshMirror);
     }
@@ -409,20 +409,17 @@ function createScene() {
 
     scene.fog = new THREE.Fog(0x333333, 1500, 2100);
 
-    var directionalLight = new THREE.DirectionalLight(0x8888aa);
-    directionalLight.position.set(1, 1, 1).normalize();
-    scene.add(directionalLight);
-
-    var directionalLight = new THREE.DirectionalLight(0x8888aa);
-    directionalLight.position.set(-1, 1, 1).normalize();
-    scene.add(directionalLight);
-
+    lights = [new THREE.DirectionalLight(0x8888aa), new THREE.DirectionalLight(0x8888aa)];
+    lights[0].position.set(1, 1, 1).normalize();
+    lights[1].position.set(-1, 1, 1).normalize();
+    camera.add(lights[0]);
+    camera.add(lights[1]);
+    scene.add(camera);
     vertexGeometry = new THREE.SphereGeometry(0.01, 16, 16);
     vertexMesh = new THREE.Mesh(vertexGeometry, new THREE.MeshBasicMaterial({ color:0x770000}));
     scene.add(vertexMesh);
     
     flatScene = new THREE.Scene();
-    flatScene.add(directionalLight);
     var flatSceneScale = 0.5;
 
     var xOffset = .7;
@@ -473,6 +470,12 @@ function render3D() {
         animGeometry = geometry;
         return;
     }
+
+  //  lights[0].position.set(1, 1, 1).normalize().applyMatrix4(camera.matrixWorldInverse);
+  //  lights[1].position.set(-1, 1, 1).normalize().applyMatrix4(camera.matrixWorldInverse);
+    
+  //  lights[0].position.set(1, 0, 1).normalize();
+  //  lights[1].position.set(-1, 0, 1).normalize();
 
     geometry.computeFaceNormals();
     geometry.computeVertexNormals();
