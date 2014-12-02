@@ -1,6 +1,6 @@
 // Adapted from http://www.davidcornette.com/glsl/download.htm
 
-#define NNOISE 4
+#define NNOISE 16
 
 #define PI 3.1415926535879
 
