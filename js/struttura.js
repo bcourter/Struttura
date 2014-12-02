@@ -461,6 +461,7 @@ function animate() {
 
     render3D();
     controls.update();
+    shaderLib.updateShader(shaderName);
     //stats.update();
 }
 
