@@ -43,8 +43,8 @@ define({
 	author: "Dewb",
 	uniforms: {
 		Background: { type: "v3", value: new THREE.Vector3(0.4, 0.1, 0.7) },
-		LineWidth: { type: 'f', min: 0.001, max: 0.015, value: 0.005 },
-		NumPolys: { type: 'i', min: 1, max: 12, value: 6 },
+		LineWidth: { type: 'f', min: 0.000001, max: 0.0005, value: 0.00005 },
+		NumPolys: { type: 'i', min: 1, max: 24, value: 6 },
 		PolySides: { type: 'i', min: 3, max: 12, value: 5 },
 		Spacing: { type: 'f', min: 0, max: 0.25, value: 0.035 },
 		Rotation: { type: 'f', min: 0, max: Math.PI, value: 1 },
