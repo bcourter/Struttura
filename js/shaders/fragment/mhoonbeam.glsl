@@ -5,10 +5,6 @@ uniform float scaleY;
 uniform float shiftX;
 uniform float shiftY;
 uniform float LineWidth;
-uniform int NumPolys;
-uniform int PolySides;
-uniform float Spacing;
-uniform float Rotation;
 
 uniform sampler2D DataTexture;
 uniform int NumPoints;
@@ -30,8 +26,14 @@ float distToSegmentSquared(vec2 v, vec2 w, vec2 p) {
                        v.y + t * (w.y - v.y)));
 }
 
+vec3 hsv2rgb(vec3 c) {
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
 float illuminationFromLine(vec2 p1, vec2 p2, vec2 p, float thickness) {
-	return thickness/distToSegmentSquared(p1, p2, p);
+	return sqrt(thickness/distToSegmentSquared(p1, p2, p));
 }
 
 void main(void)
@@ -39,17 +41,19 @@ void main(void)
     vec2 p = vVertexPosition.xy * vec2(expScaleX, expScaleY) + vec2(shiftX, shiftY);
 	p -= vec2(0.0, 0.40);
 	
-	float dist = 0.0;
+	vec3 dist = vec3(0.0, 0.0, 0.0);
 	for (int i = 0; i < 256; i += 2) {
 		if (i >= NumPoints) {
 			break;
 		}
+		vec4 pt1 = texture2D(DataTexture, vec2(float(i)/256.0, 0));
+		vec4 pt2 = texture2D(DataTexture, vec2(float(i+1)/256.0, 0));
 		dist += illuminationFromLine(
-			texture2D(DataTexture, vec2(float(i)/256.0, 0)).rg,
-			texture2D(DataTexture, vec2(float(i+1)/256.0, 0)).rg,
+			pt1.xy,
+			pt2.xy,
 			p,
-			LineWidth);
+			LineWidth * 0.0001) * hsv2rgb(vec3(pt1.z, pt1.w, 0.5));
 	}
-	gl_FragColor = vec4(dist*vec3(0.36,0.32,0.15) + Background,1.0);	
+	gl_FragColor = vec4(dist * 0.5 + Background, 1.0);	
 }
 
