@@ -75,6 +75,37 @@ define(dependencies, function(defaultVertexShader) {
         }
     }
 
+    function getQueryStringParameters() {
+        var match,
+            pl     = /\+/g,  // Regex for replacing addition symbol with a space
+            search = /([^&=]+)=?([^&]*)/g,
+            decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+            query  = window.location.search.substring(1);
+
+        urlParams = {};
+        while (match = search.exec(query)) {
+            urlParams[decode(match[1])] = decode(match[2]);
+        }
+        return urlParams;
+    }
+
+    function updateQueryStringParameter(uri, key, value) {
+        var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+        var separator = uri.indexOf('?') !== -1 ? "&" : "?";
+        if (uri.match(re)) {
+            return uri.replace(re, '$1' + key + "=" + value + '$2');
+        }
+        else {
+            return uri + separator + key + "=" + value;
+        }
+    }
+
+    function updateUniformParamInQueryString(uniformName, newValue) {
+        //console.log(uniform);
+        var newQueryString = updateQueryStringParameter(window.location.href, uniformName, newValue);
+        window.history.replaceState({}, "Struttura", newQueryString)
+    }
+
     function createShaderControls(name) {
 		if (!(name in shaders)) {
     		return null;
@@ -95,10 +126,26 @@ define(dependencies, function(defaultVertexShader) {
         //gui.useLocalStorage = true;
         gui.remember(adapter);
 
+        urlQueryParams = getQueryStringParameters();
+
     	for (uniformName in uniforms) {
     		var uniform = uniforms[uniformName];
+            uniform.name = uniformName;
     		var param = null;
             var guiContainer = gui;
+            var queryVal = urlQueryParams[uniformName];
+            if (queryVal != undefined) {
+                if (uniform.value instanceof THREE.Vector3) {
+                    var triplet = queryVal.split(",")
+                    uniform.value.x = parseInt(triplet[0]/255);
+                    uniform.value.y = parseInt(triplet[1]/255);
+                    uniform.value.z = parseInt(triplet[2]/255);
+                } else if (uniform.type == "i") {
+                    uniform.value = parseInt(queryVal);
+                } else if (uniform.type == "f") {
+                    uniform.value = parseFloat(queryVal);
+                }
+            }
 
             if (uniform.hide) {
                 continue;
@@ -119,6 +166,7 @@ define(dependencies, function(defaultVertexShader) {
 		    		}})(uniform),
 		    		set: (function(u) { return function(newValue) { 
 		    			u.value.set(newValue[0]/255, newValue[1]/255, newValue[2]/255);
+                        updateUniformParamInQueryString(u.name, newValue);
 		    		}})(uniform)
 		    	});
 		    	param = guiContainer.addColor(adapter, uniformName);
@@ -127,7 +175,12 @@ define(dependencies, function(defaultVertexShader) {
             } else {
 		    	Object.defineProperty(adapter, uniformName, {
 		    		get: (function(u) { return function() { return u.value; }})(uniform),
-		    		set: (function(u) { return function(newValue) { u.value = newValue; }})(uniform)
+		    		set: (function(u) { 
+                        return function(newValue) { 
+                            u.value = newValue;
+                            updateUniformParamInQueryString(u.name, newValue); 
+                        }
+                    })(uniform)
 		    	});
 		    	param = guiContainer.add(adapter, uniformName);
 		    }
@@ -136,13 +189,13 @@ define(dependencies, function(defaultVertexShader) {
                 param.step(1.0);
             }
 
-	    	if ("min" in uniform) {
+	    	if ("min" in uniform && "min" in param) {
 	    		param.min(uniform.min);
 	    	}
-	    	if ("max" in uniform) {
+	    	if ("max" in uniform && "max" in param) {
 	    		param.max(uniform.max);
 	    	}
-	    	if ("step" in uniform) {
+	    	if ("step" in uniform && "step" in param) {
 	    		param.step(uniform.step);
 	    	}
 	    }
