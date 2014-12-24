@@ -175,7 +175,15 @@ define(dependencies, function(defaultVertexShader) {
             var defaultPreset = { "0" : {} };
             for (uniformName in uniforms) {
                 var uniform = uniforms[uniformName]
-                defaultPreset["0"][uniformName] = uniform.value;
+                if (uniform.type == "v3") {
+                    defaultPreset["0"][uniformName] = [
+                        Math.round(uniform.value.x * 255), 
+                        Math.round(uniform.value.y * 255), 
+                        Math.round(uniform.value.z * 255)
+                    ];
+                } else {
+                    defaultPreset["0"][uniformName] = uniform.value;
+                }
             }
             var defaultPresetName = "Default";
             options.load.preset = defaultPresetName;
@@ -238,7 +246,7 @@ define(dependencies, function(defaultVertexShader) {
                 guiContainer = folders[uniform.folder];
             }
 
-    		if (uniform.value instanceof THREE.Vector3) {
+    		if (uniform.type == "v3") {
     			// color picker, convert from GLSL rep
     			Object.defineProperty(adapter, uniformName, {
 		    		get: (function(u) { return function() { 

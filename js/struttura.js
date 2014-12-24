@@ -114,6 +114,16 @@ function init() {
     var gui = shaderLib.createShaderControls(shaderName);
     document.getElementById("control-container").appendChild(gui.domElement);
 
+    // Work around issue with dat.GUI color controls going black when losing keyboard focus
+    var colorControls = document.getElementsByClassName("cr object color");
+    for (var c = 0; c < colorControls.length; c++) {
+        var inputs = colorControls[c].getElementsByTagName("input");
+        for (var i = 0; i < inputs.length; i++) {
+            inputs[i].setAttribute("readonly", true);
+            inputs[i].setAttribute("disabled", true);
+        }
+    }
+
     document.getElementById("SaveObj").onclick = saveObj;
     document.getElementById("SaveImage").onclick = saveImage;
 }
