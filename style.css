@@ -54,6 +54,20 @@
     padding: 4px 8px;
 }
 
+span.bigbuttons a {
+    display: inline-block;
+    border-radius: 8px;
+    text-decoration: none;
+    background: #dad5cb;
+    color: black;
+    padding: 10px;
+    width: 56px;
+    text-align: center;
+}
+
+span.bigbuttons a:hover {
+    background: white;
+}
 
 .grid {
 }

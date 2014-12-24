@@ -102,12 +102,20 @@ function init() {
 
     var shaderMenu = document.getElementById("shaderMenu");
     shaderLib.getShaderNames().forEach(function(name) {
-        var link = document.createElement("a");
+        var option = document.createElement("option");
         var urlStart = [location.protocol, '//', location.host, location.pathname].join('');
-        link.href = urlStart + "?pattern=" + patternFile + "&mirror=" + getGetValue("mirror") + "&gfx=" + name;
-        link.innerHTML = name;
-        shaderMenu.appendChild(link);
+        var href = urlStart + "?pattern=" + patternFile + "&mirror=" + getGetValue("mirror") + "&gfx=" + name;
+        option.innerHTML = name;
+        if (name == shaderName) {
+            option.selected = true;
+        }
+        option.value = href;
+        shaderMenu.appendChild(option);
     });
+    shaderMenu.onchange = function () {
+       var href = document.getElementById("shaderMenu").value;
+       window.location = href;
+    }
 
     loadpart(patternPath, function (geometries, lines, curves) { loadGeometry(geometries, lines, curves); });
 

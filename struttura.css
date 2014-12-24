@@ -40,23 +40,13 @@ a:hover {
     background-color: #222;
 }
 
-.panel {
-    position: absolute;
-    top: 80;
-    left: 0;
-    right: 0;
-    margin: 1px;
-    padding: 6px;
-    border-width: 1px;    
-    border-color: #444;
-}
-
 #shaderMenu {
   position: absolute;
-  top: 40pt;
-  margin: 1em;
+  top: 55px;
+  margin: 5px;
+  font-size: 26px;
+  border-color: #dad5cb;
+  width: 240px;
+  background: #dad5cb;
 }
 
-#shaderMenu a {
-  display: block;
-}
