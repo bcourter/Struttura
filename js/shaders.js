@@ -106,17 +106,17 @@ define(dependencies, function(defaultVertexShader) {
         window.history.replaceState({}, "Struttura", newQueryString)
     }
 
-    function decodeUniformFromQueryParam(uniformName, queryParams) {
+    function decodeUniformFromQueryParam(uniform, queryParams) {
         var value = undefined;
-        var queryVal = urlQueryParams[uniformName];
+        var queryVal = queryParams[uniform.name];
         if (queryVal != undefined) {
             if (uniform.type == "v3") {
                 var triplet = queryVal.split(",")
-                value = new THREE.Vector3(
-                    parseInt(triplet[0]/255),
-                    parseInt(triplet[1]/255),
-                    parseInt(triplet[2]/255)
-                );
+                value = [
+                    parseInt(triplet[0]),
+                    parseInt(triplet[1]),
+                    parseInt(triplet[2])
+                ];
             } else if (uniform.type == "i") {
                 value = parseInt(queryVal);
             } else if (uniform.type == "f") {
@@ -124,6 +124,33 @@ define(dependencies, function(defaultVertexShader) {
             }
        }
        return value;
+    }
+
+    function objectsDiffer(a, b) {
+        if (a instanceof Object) {
+            if (b instanceof Object) {
+                for (prop in a) {
+                    if (objectsDiffer(a[prop], b[prop])) {
+                        return true;
+                    }
+                }
+                for (prop in b) {
+                    if (!(prop in a)) {
+                        return true;
+                    }
+                }
+            } else {
+                return true;
+            }
+
+            return false;
+        } else {
+            return a != b;
+        }
+    }
+
+    function doPresetsMatch(preset1, preset2) {
+        return !objectsDiffer(preset1["0"], preset2["0"]);
     }
 
     function createShaderControls(name) {
@@ -141,8 +168,48 @@ define(dependencies, function(defaultVertexShader) {
         }
 
         var options = { autoPlace: false };
-        if (!restoreParamsFromQuery && "presets" in shaders[name]) {
+        if ("presets" in shaders[name]) {
             options.load = shaders[name].presets;
+        } else {
+            options.load = { "preset" : "", "remembered" : {} };
+            var defaultPreset = { "0" : {} };
+            for (uniformName in uniforms) {
+                var uniform = uniforms[uniformName]
+                defaultPreset["0"][uniformName] = uniform.value;
+            }
+            var defaultPresetName = "Default";
+            options.load.preset = defaultPresetName;
+            options.load.remembered[defaultPresetName] = defaultPreset;
+        }
+
+        if (restoreParamsFromQuery) {
+            var newPreset = { "0" : {} };
+            for (uniformName in uniforms) {
+                var uniform = uniforms[uniformName];
+                uniform.name = uniformName;
+                var val = decodeUniformFromQueryParam(uniform, urlQueryParams, true);
+                if (val == undefined) {
+                    val = uniform.value;
+                }
+                newPreset["0"][uniformName] = val;
+            }
+
+            var matchedPreset = undefined;
+
+            for (var presetName in options.load.remembered) {
+                var preset = options.load.remembered[presetName];
+                if (doPresetsMatch(preset, newPreset)) {
+                    matchedPreset = presetName;
+                }
+            }
+
+            if (matchedPreset != undefined) {
+                options.load.preset = matchedPreset;
+            } else {
+                var newPresetName = "(new)";
+                options.load.preset = newPresetName;
+                options.load.remembered[newPresetName] = newPreset;
+            }
         }
 
     	var gui = new dat.GUI(options);
@@ -159,12 +226,6 @@ define(dependencies, function(defaultVertexShader) {
             uniform.name = uniformName;
     		var param = null;
             var guiContainer = gui;
-            if (restoreParamsFromQuery) {
-                var queryVal = decodeUniformFromQueryParam(uniformName, urlQueryParams);
-                if (queryVal != undefined) {
-                    uniform.value = queryVal;
-                }
-            }
 
             if (uniform.hide) {
                 continue;
