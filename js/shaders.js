@@ -6,7 +6,7 @@ var shaderNames = [
     , "noisebands"
     , "noisegradient"
     , "wood"
-    , "mandelbrot"
+ //  , "mandelbrot"
     , "marblephase"
     , "mhoonbeam"
     //"spiral",
