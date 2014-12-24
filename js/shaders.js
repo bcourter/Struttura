@@ -1,6 +1,6 @@
 var shaderNames = [
-	"test"
-	, "cortex"
+	//"test"
+	"cortex"
 	, "eggholder"
     , "noise"
     , "noisebands"

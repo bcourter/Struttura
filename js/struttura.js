@@ -98,7 +98,7 @@ function init() {
     if (patternFile == null)
         isMirror = true;
 
-    shaderName = getGetValue("gfx") || "Test";
+    shaderName = getGetValue("gfx") || "NoiseGradient";
 
     var shaderMenu = document.getElementById("shaderMenu");
     shaderLib.getShaderNames().forEach(function(name) {
