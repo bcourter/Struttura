@@ -106,14 +106,42 @@ define(dependencies, function(defaultVertexShader) {
         window.history.replaceState({}, "Struttura", newQueryString)
     }
 
+    function decodeUniformFromQueryParam(uniformName, queryParams) {
+        var value = undefined;
+        var queryVal = urlQueryParams[uniformName];
+        if (queryVal != undefined) {
+            if (uniform.type == "v3") {
+                var triplet = queryVal.split(",")
+                value = new THREE.Vector3(
+                    parseInt(triplet[0]/255),
+                    parseInt(triplet[1]/255),
+                    parseInt(triplet[2]/255)
+                );
+            } else if (uniform.type == "i") {
+                value = parseInt(queryVal);
+            } else if (uniform.type == "f") {
+                value = parseFloat(queryVal);
+            }
+       }
+       return value;
+    }
+
     function createShaderControls(name) {
 		if (!(name in shaders)) {
     		return null;
     	}
     	var uniforms = shaders[name].uniforms;
 
+        var restoreParamsFromQuery = false;
+        urlQueryParams = getQueryStringParameters();
+        for (param in urlQueryParams) {
+            if (param in uniforms) {
+                restoreParamsFromQuery = true;
+            }
+        }
+
         var options = { autoPlace: false };
-        if ("presets" in shaders[name]) {
+        if (!restoreParamsFromQuery && "presets" in shaders[name]) {
             options.load = shaders[name].presets;
         }
 
@@ -126,24 +154,15 @@ define(dependencies, function(defaultVertexShader) {
         //gui.useLocalStorage = true;
         gui.remember(adapter);
 
-        urlQueryParams = getQueryStringParameters();
-
     	for (uniformName in uniforms) {
     		var uniform = uniforms[uniformName];
             uniform.name = uniformName;
     		var param = null;
             var guiContainer = gui;
-            var queryVal = urlQueryParams[uniformName];
-            if (queryVal != undefined) {
-                if (uniform.value instanceof THREE.Vector3) {
-                    var triplet = queryVal.split(",")
-                    uniform.value.x = parseInt(triplet[0]/255);
-                    uniform.value.y = parseInt(triplet[1]/255);
-                    uniform.value.z = parseInt(triplet[2]/255);
-                } else if (uniform.type == "i") {
-                    uniform.value = parseInt(queryVal);
-                } else if (uniform.type == "f") {
-                    uniform.value = parseFloat(queryVal);
+            if (restoreParamsFromQuery) {
+                var queryVal = decodeUniformFromQueryParam(uniformName, urlQueryParams);
+                if (queryVal != undefined) {
+                    uniform.value = queryVal;
                 }
             }
 
